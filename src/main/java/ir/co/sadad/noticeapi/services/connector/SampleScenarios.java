@@ -172,7 +172,7 @@ public class SampleScenarios {
 //        }
     }
 
-    public static void main(String[] args) throws Exception {
+    public void testAsMainMethod(String[] args) throws Exception {
 
         if (args.length != 1) {
             System.out.println("Usage: " + SampleScenarios.class.getName() + " <scenario>");

@@ -1,5 +1,7 @@
 package ir.co.sadad.noticeapi.controllers;
 
+import ir.co.sadad.noticeapi.dtos.SendCampaignNoticeReqDto;
+import ir.co.sadad.noticeapi.dtos.SendCampaignNoticeResDto;
 import ir.co.sadad.noticeapi.dtos.SendSingleNoticeReqDto;
 import ir.co.sadad.noticeapi.dtos.SendSingleNoticeResDto;
 import ir.co.sadad.noticeapi.services.NoticeService;
@@ -13,6 +15,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @RestController
@@ -50,11 +53,16 @@ public class NoticeController {
     }
 
     @PostMapping(value = "/sample")
-    public Mono<ResponseEntity<SendSingleNoticeResDto>> sendSingle(@RequestBody SendSingleNoticeReqDto singleNoticeReqDto) throws InterruptedException {
+    public Mono<ResponseEntity<SendSingleNoticeResDto>> sendSingle(@RequestBody SendSingleNoticeReqDto singleNoticeReqDto) {
         return noticeService.sendSingleNotice(singleNoticeReqDto).map((res -> {
 
             return ResponseEntity.ok()
                    .body(res);
         }));
+    }
+
+    @PostMapping(value = "/campaign")
+    public Mono<ResponseEntity<SendCampaignNoticeResDto>> sendCampaign(@RequestBody SendCampaignNoticeReqDto campaignNoticeReqDto) {
+        return noticeService.sendCampaignNotice(campaignNoticeReqDto).map((res ->  ResponseEntity.ok().body(res)));
     }
 }

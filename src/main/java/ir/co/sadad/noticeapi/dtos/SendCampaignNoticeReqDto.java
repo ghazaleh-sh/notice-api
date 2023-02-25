@@ -1,21 +1,17 @@
 package ir.co.sadad.noticeapi.dtos;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
-import javax.validation.constraints.NotNull;
 import java.util.List;
 
+@EqualsAndHashCode(callSuper = true)
 @Data
-public class SendCampaignNoticeReqDto {
+public class SendCampaignNoticeReqDto extends SendSingleNoticeReqDto{
+    private static final long serialVersionUID = 1678659015284581484L;
 
-    @NotNull(message = "title.is.required")
-    private String title;
-
-    @NotNull(message = "description.is.required")
-    private String description;
-
+    /*
+    if ssn is null, send for all
+     */
     private List<String> ssn;
-
-    @NotNull(message = "date.is.required")
-    private Integer date;
 }

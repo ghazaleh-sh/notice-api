@@ -8,19 +8,18 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.core.reactive.ReactiveKafkaConsumerTemplate;
 import org.springframework.stereotype.Service;
-import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 
-import java.util.*;
-
-
+/**
+ * a service as reactiveKafkaSource
+ */
 @Slf4j
 @RequiredArgsConstructor
 @Service
-public class ReactiveConsumerService {//implements CommandLineRunner {
+public class ReactiveConsumerService {
 
 
     private final Scheduler scheduler = Schedulers.newSingle("sample", true);
@@ -29,18 +28,34 @@ public class ReactiveConsumerService {//implements CommandLineRunner {
 
     private final ReactiveKafkaConsumerTemplate<String, SendSingleNoticeReqDto> reactiveKafkaConsumerTemplate;
 
-    List<Disposable> disposables = new ArrayList<>();
-
-//    public void flux() {
-//        reactiveKafkaConsumerTemplate.receive()
+    /**
+     * The code segment below consumes records from Kafka topics,
+     * transforms the record and sends the output to an external sink.
+     * Kafka consumer offsets are committed after records are successfully output to sink.
+     */
+    public Flux<String> consumeNotificationDTO() {
+        return reactiveKafkaConsumerTemplate
+                .receiveAutoAck()
 //                .publishOn(scheduler)
-//                .concatMap(m -> storeInDB(m.value())
-//                        .thenEmpty(m.receiverOffset().commit()));
-////                .retry()
-////                .doOnCancel(this::close);
-//    }
+                .concatMap(m -> storeInDB(m.value()))
+//                     .thenEmpty(m.receiverOffset().commit()));
+//                   or
+//                      .doOnSuccess(r -> m.receiverOffset().commit().block()));
+//                .receive()
+//                // .delayElements(Duration.ofSeconds(2L)) // BACKPRESSURE
+//                .doOnNext(consumerRecord -> log.info("received key={}, value={} from topic={}, offset={}",
+//                        consumerRecord.key(),
+//                        consumerRecord.value(),
+//                        consumerRecord.topic(),
+//                        consumerRecord.offset())
+//                )
+//                .map(ConsumerRecord::value)
+//                .doOnNext(this::storeInDB)
+                .doOnNext(data -> log.info("successfully consumed {}={}", SendSingleNoticeReqDto.class.getSimpleName(), data))
+                .doOnError(throwable -> log.error("something bad happened while consuming : {}", throwable.getMessage()));
+    }
 
-    public Mono<String> storeInDB(SendSingleNoticeReqDto singleNoticeReqDto) {
+    private Mono<String> storeInDB(SendSingleNoticeReqDto singleNoticeReqDto) {
         log.info("Successfully processed singleNoticeReqDto with title {} from Kafka", singleNoticeReqDto.getTitle());
         SendSingleNoticeResDto res = new SendSingleNoticeResDto();
 
@@ -64,40 +79,5 @@ public class ReactiveConsumerService {//implements CommandLineRunner {
 //            return Mono.empty();
     }
 
-    public void close() {
-        for (Disposable disposable : disposables)
-            disposable.dispose();
-        scheduler.dispose();
-    }
-
-//    public void runScenario() throws InterruptedException {
-//        flux();
-//        close();
-//    }
-
-    public Flux<String> consumeNotificationDTO() {
-        return reactiveKafkaConsumerTemplate
-                .receiveAutoAck()
-//                .publishOn(scheduler)
-                .concatMap(m -> storeInDB(m.value()))
-//                .receive()
-//                // .delayElements(Duration.ofSeconds(2L)) // BACKPRESSURE
-//                .doOnNext(consumerRecord -> log.info("received key={}, value={} from topic={}, offset={}",
-//                        consumerRecord.key(),
-//                        consumerRecord.value(),
-//                        consumerRecord.topic(),
-//                        consumerRecord.offset())
-//                )
-//                .map(ConsumerRecord::value)
-//                .doOnNext(this::storeInDB)
-                .doOnNext(data -> log.info("successfully consumed {}={}", SendSingleNoticeReqDto.class.getSimpleName(), data))
-                .doOnError(throwable -> log.error("something bad happened while consuming : {}", throwable.getMessage()));
-    }
-
-//    @Override
-//    public void run(String... args) throws Exception {
-//        // we have to trigger consumption
-//        consumeNotificationDTO().subscribe();
-//    }
 
 }

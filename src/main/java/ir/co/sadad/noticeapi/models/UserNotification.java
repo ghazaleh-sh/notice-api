@@ -1,7 +1,9 @@
 package ir.co.sadad.noticeapi.models;
 
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
@@ -11,6 +13,8 @@ import java.util.List;
 @Document
 @Data
 @AllArgsConstructor
+@NoArgsConstructor
+@Builder
 public class UserNotification implements Serializable {
 
     private static final long serialVersionUID = 5955078288357146342L;
@@ -25,7 +29,7 @@ public class UserNotification implements Serializable {
     /**
      * notifications list of user
      */
-    private List<Notification> notifications;
+    private List<String> notificationsId;
 
     /**
      * id of last seen notice
@@ -40,5 +44,5 @@ public class UserNotification implements Serializable {
     /**
      * unread notices count
      */
-    private String remainNotificationCount;
+    private Long remainNotificationCount;
 }

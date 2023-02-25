@@ -16,7 +16,7 @@ public interface NoticeService {
 
     Mono<SendSingleNoticeResDto> sendSingleNotice(SendSingleNoticeReqDto singleNoticeReqDto);
 
-    Flux<SendCampaignNoticeResDto> sendCampaignNotice(SendCampaignNoticeReqDto campaignNoticeReqDto);
+    Mono<SendCampaignNoticeResDto> sendCampaignNotice(SendCampaignNoticeReqDto campaignNoticeReqDto);
 
     Flux<UserNoticeListResDto> userNoticeList();
 
