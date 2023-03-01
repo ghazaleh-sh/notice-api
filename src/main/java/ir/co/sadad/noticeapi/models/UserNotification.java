@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
+import reactor.core.publisher.Mono;
 
 import java.io.Serializable;
 import java.util.List;
@@ -29,7 +30,7 @@ public class UserNotification implements Serializable {
     /**
      * notifications list of user
      */
-    private List<String> notificationsId;
+    private List<Notification> notifications;
 
     /**
      * id of last seen notice

@@ -1,6 +1,8 @@
 package ir.co.sadad.noticeapi.services;
 
 import ir.co.sadad.noticeapi.dtos.*;
+import org.springframework.http.codec.multipart.FilePart;
+import org.springframework.web.multipart.MultipartFile;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -16,9 +18,9 @@ public interface NoticeService {
 
     Mono<SendSingleNoticeResDto> sendSingleNotice(SendSingleNoticeReqDto singleNoticeReqDto);
 
-    Mono<SendCampaignNoticeResDto> sendCampaignNotice(SendCampaignNoticeReqDto campaignNoticeReqDto);
+    Mono<SendCampaignNoticeResDto> sendCampaignNotice(SendCampaignNoticeReqDto campaignNoticeReqDto, FilePart file);
 
-    Flux<UserNoticeListResDto> userNoticeList();
+    Mono<UserNoticeListResDto> userNoticeList(String ssn, String type);
 
     void UserLastSeenId(String lastSeenId);
 

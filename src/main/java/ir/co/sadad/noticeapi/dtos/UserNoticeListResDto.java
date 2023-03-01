@@ -10,6 +10,6 @@ import java.util.List;
 public class UserNoticeListResDto {
 
     private String ssn;
-    private List<Notification> notifications;
     private String lastSeenId;
+    private List<Notification> notifications;
 }
