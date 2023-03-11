@@ -15,6 +15,8 @@ import reactor.core.scheduler.Schedulers;
 
 /**
  * a service as reactiveKafkaSource
+ *
+ * @author g.shahrokhabadi
  */
 @Slf4j
 @RequiredArgsConstructor

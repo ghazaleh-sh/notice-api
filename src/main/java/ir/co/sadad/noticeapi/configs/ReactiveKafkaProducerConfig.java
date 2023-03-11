@@ -12,11 +12,9 @@ import java.util.Map;
 
 /**
  * Creating a producer will write our messages to the topic.
- * It gets correctly properties from sever config
+ * It gets correctly properties from server config
  *
- * TODO:
- * Along with buffer.memory and max.block.ms options on KafkaProducer,
- * maxInFlight enables control of memory and thread usage when KafkaSender is used in a reactive pipeline
+ * @author g.shahrokhabadi
  */
 @Slf4j
 @Configuration

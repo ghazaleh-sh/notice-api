@@ -8,6 +8,10 @@ import org.apache.kafka.common.serialization.Deserializer;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
+/**
+ * @author g.shahrokhabadi
+ */
+
 @Slf4j
 public class KafkaValueDeserializer implements Deserializer<SendSingleNoticeReqDto> {
 

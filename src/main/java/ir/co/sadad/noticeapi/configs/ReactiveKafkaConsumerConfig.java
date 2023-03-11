@@ -15,8 +15,10 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Consumer is  the service that will be responsible for reading messages processing them according to
+ * Consumer is  the service that will be responsible for reading messages and processing them according to
  * the needs of your own business logic.
+ *
+ * @author g.shahrokhabadi
  */
 @Slf4j
 @Configuration

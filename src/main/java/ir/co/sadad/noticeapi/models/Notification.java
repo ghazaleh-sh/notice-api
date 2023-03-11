@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+import javax.validation.constraints.NotNull;
 import java.io.Serializable;
 
 @Document
@@ -23,6 +24,7 @@ public class Notification implements Serializable {
     /**
      * title of notice
      */
+    @NotNull(message = "title.must.not.be.null")
     private String title;
 
     /**
@@ -33,11 +35,13 @@ public class Notification implements Serializable {
     /**
      * date of notice release- base on epoch time (milliseconds )
      */
+    @NotNull(message = "date.must.not.be.null")
     private Long date;
 
     /**
      * type = 1 means transactions less than 30k
      * type = 2 means Campaign notices
      */
+    @NotNull(message = "type.must.not.be.null")
     private String type;
 }

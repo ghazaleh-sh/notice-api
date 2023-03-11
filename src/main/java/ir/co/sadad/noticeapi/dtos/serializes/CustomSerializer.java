@@ -2,11 +2,17 @@ package ir.co.sadad.noticeapi.dtos.serializes;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import ir.co.sadad.noticeapi.dtos.SendSingleNoticeReqDto;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.common.errors.SerializationException;
 import org.apache.kafka.common.serialization.Serializer;
 
 import java.util.Map;
 
+/**
+ * @author g.shahrokhabadi
+ */
+
+@Slf4j
 public class CustomSerializer implements Serializer<SendSingleNoticeReqDto> {
     private final ObjectMapper objectMapper = new ObjectMapper();
 

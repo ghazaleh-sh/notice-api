@@ -6,8 +6,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
-import reactor.core.publisher.Mono;
 
+import javax.validation.constraints.NotNull;
 import java.io.Serializable;
 import java.util.List;
 
@@ -25,6 +25,7 @@ public class UserNotification implements Serializable {
     /**
      * user national code
      */
+    @NotNull(message = "ssn.must.not.be.null")
     private String ssn;
 
     /**
@@ -38,7 +39,7 @@ public class UserNotification implements Serializable {
     private String lastSeenNotificationId;
 
     /**
-     *id of previous notice which seen by user TODO?
+     *id of previous notice which seen by user
      */
     private String previousNotificationId;
 

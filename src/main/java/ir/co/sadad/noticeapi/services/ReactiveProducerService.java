@@ -17,6 +17,8 @@ import org.springframework.stereotype.Service;
  *   <li> Run {@link SampleProducer} as Java application with all dependent jars in the CLASSPATH (eg. from IDE).
  *   <li> Shutdown Kafka server and Zookeeper when no longer required
  * </ol>
+ *
+ * @author g.shahrokhabadi
  */
 
 @Slf4j

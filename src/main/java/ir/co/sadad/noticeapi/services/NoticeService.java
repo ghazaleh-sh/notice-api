@@ -1,15 +1,14 @@
 package ir.co.sadad.noticeapi.services;
 
 import ir.co.sadad.noticeapi.dtos.*;
+import ir.co.sadad.noticeapi.models.UserNotification;
 import org.springframework.http.codec.multipart.FilePart;
-import org.springframework.web.multipart.MultipartFile;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.util.List;
 
 /**
- * a service for sending notices to users and getting user notices data
+ * service for sending notices to users and getting user notices data
  *
  * @author g.shahrokhabadi
  * created on 2021/12/28
@@ -22,11 +21,11 @@ public interface NoticeService {
 
     Mono<UserNoticeListResDto> userNoticeList(String ssn, String type);
 
-    void UserLastSeenId(String lastSeenId);
+    Mono<UserNoticeListResDto> UserLastSeenId(String ssn, String lastSeenId);
 
-    Flux<UnreadNoticeCountResDto> unreadNoticeCount();
+    Mono<UnreadNoticeCountResDto> unreadNoticeCount(String ssn);
 
-    void deleteSingleNotice(String notificaionId);
+//    Mono<UserNotification> deleteSingleNotice(String ssn, String notificaionId);
 
-    void deleteMultiNotice(List<String> notificaionIdList);
+    Mono<UserNotification> deleteMultiNotice(String ssn, List<String> notificaionIdList);
 }
