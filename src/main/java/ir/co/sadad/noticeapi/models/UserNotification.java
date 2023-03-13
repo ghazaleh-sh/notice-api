@@ -39,9 +39,14 @@ public class UserNotification implements Serializable {
     private String lastSeenNotificationId;
 
     /**
-     *id of previous notice which seen by user
+     * index of last seen notice
      */
-    private String previousNotificationId;
+    private Integer lastSeenNotificationIndex;
+
+    /**
+     *index of previous notice which seen by user
+     */
+    private Integer previousNotificationIndex;
 
     /**
      * unread notices count

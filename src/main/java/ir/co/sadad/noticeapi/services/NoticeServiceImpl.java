@@ -156,9 +156,7 @@ public class NoticeServiceImpl implements NoticeService {
 //                            if (notif == null)
 //                                sink.error(new GeneralException("error.on.save.notification"));
 //                        }))
-                .onErrorMap(throwable -> new ValidationException(throwable.getMessage(), "error.on.save.notification"))
-                // just to see what is being emitted
-                .log();
+                .onErrorMap(throwable -> new ValidationException(throwable.getMessage(), "error.on.save.notification"));
     }
 
     private Mono<UserNotification> saveUser(String ssn, Notification savedNotification) {
@@ -172,7 +170,8 @@ public class NoticeServiceImpl implements NoticeService {
                 .notifications(notifsOfUser)
                 .remainNotificationCount(1L)
                 .lastSeenNotificationId("")
-                .previousNotificationId("")
+                .lastSeenNotificationIndex(0)
+                .previousNotificationIndex(-1)
                 .build())
                 .onErrorMap(throwable -> new GeneralException(throwable.getMessage(), "error.on.save.user.notification"))
                 // just to see what is being emitted
@@ -184,69 +183,74 @@ public class NoticeServiceImpl implements NoticeService {
         UserNoticeListResDto res = new UserNoticeListResDto();
         res.setSsn(ssn);
 
+        /*
+        for concerning about backpressure when collecting the list of notifications,
+        you can use the Flux.fromIterable method to convert the list to a Flux
+         and then apply backpressure operators on it.
+         */
         return userNotificationRepository.findBySsn(ssn)
                 .flatMap(userNotification -> {
-                    if (type != null)
-                        res.setNotifications(userNotification.getNotifications().stream()
-                                .filter(notification -> notification.getType().equals(type))
-                                .collect(Collectors.toList()));
-                    else
-                        res.setNotifications(userNotification.getNotifications());
-
-                    res.setLastSeenId(userNotification.getLastSeenNotificationId());
-                    return Mono.just(res);
+                    Flux<Notification> notificationsFlux = Flux.fromIterable(userNotification.getNotifications());
+                    if (type != null) {
+                        notificationsFlux = notificationsFlux.filter(notification -> notification.getType().equals(type));
+                    }
+                    return notificationsFlux
+                            .onBackpressureBuffer(20) // buffer up to 20 items
+                            .limitRate(20) // limit the rate at which items are emitted to 20
+                            .collectList()
+                            .doOnNext(notifications -> {
+                                res.setNotifications(notifications);
+                                res.setLastSeenId(userNotification.getLastSeenNotificationId());
+                            })
+                            .thenReturn(res);
                 })
                 .switchIfEmpty(Mono.error(new GeneralException("ssn.not.find", HttpStatus.NOT_FOUND)));
     }
 
     @Override
     public Mono<UserNoticeListResDto> UserLastSeenId(String ssn, String lastSeenId) {
-        UserNoticeListResDto result = new UserNoticeListResDto();
 
         return userNotificationRepository.findBySsn(ssn)
-                .map(res -> new UserNotification(res.getId(),
-                        res.getSsn(),
-                        res.getNotifications(),
-                        lastSeenId,
-                        !res.getLastSeenNotificationId().equals("") ? res.getLastSeenNotificationId(): res.getPreviousNotificationId(),
-                        Math.abs(res.getRemainNotificationCount() -
-                                readiedNoticesCount(res.getNotifications(), res.getLastSeenNotificationId(), lastSeenId))))
-                .flatMap(this.userNotificationRepository::save)
                 .switchIfEmpty(Mono.error(new GeneralException("ssn.not.find", HttpStatus.NOT_FOUND)))
-                .flatMap(user -> {
+                .flatMap(res -> {
+                    Mono<Integer> lastSeenInxMono = Flux.fromIterable(res.getNotifications())
+                            .filter(notification -> notification.getId().equals(lastSeenId))
+                            .next()
+                            .map(notification -> res.getNotifications().indexOf(notification))
+                            .switchIfEmpty(Mono.error(new GeneralException("notification.id.not.valid", HttpStatus.NOT_FOUND)));
+
+                    return lastSeenInxMono.flatMap(lastSeenInx -> {
+                        if (res.getLastSeenNotificationIndex() > lastSeenInx)
+                            return Mono.error(new GeneralException("pre.id.is.newer", HttpStatus.BAD_REQUEST));
+
+                        return Mono.just(new UserNotification(res.getId(),
+                                res.getSsn(),
+                                res.getNotifications(),
+                                lastSeenId,
+                                lastSeenInx,
+                                !res.getLastSeenNotificationId().equals("") ? res.getLastSeenNotificationIndex() : res.getPreviousNotificationIndex(),
+                                Math.abs(res.getRemainNotificationCount() -
+                                        (lastSeenInx - (res.getLastSeenNotificationIndex() == 0 ? res.getPreviousNotificationIndex() : res.getLastSeenNotificationIndex()))
+                                )));
+
+                    });
+                })
+                .flatMap(this.userNotificationRepository::save)
+                .map(user -> {
+                    UserNoticeListResDto result = new UserNoticeListResDto();
                     result.setLastSeenId(user.getLastSeenNotificationId());
                     result.setSsn(ssn);
-                    return Mono.just(result);
+                    return result;
                 });
 
-    }
-//TODO: write in reactive mode
-    private Long readiedNoticesCount(List<Notification> notifs, String preId, String lastSeen) {
-        Long startPoint = preId.equals("") ? -1L : null, endPoint = null;
-
-        for(int i=0; i< notifs.size();i++){
-            if(startPoint !=null && endPoint!= null)
-                break;
-            if(notifs.get(i).getId().equals(preId))
-                startPoint = (long) i;
-            if(notifs.get(i).getId().equals(lastSeen))
-                endPoint = (long)i;
-        }
-        if(startPoint == null || endPoint == null)
-            throw new GeneralException("notification.id.not.valid", HttpStatus.BAD_REQUEST);
-
-        if(startPoint > endPoint)
-            throw new GeneralException("pre.id.is.newer", HttpStatus.BAD_REQUEST);
-
-        return endPoint - startPoint;
     }
 
     @Override
     public Mono<UnreadNoticeCountResDto> unreadNoticeCount(String ssn) {
-        UnreadNoticeCountResDto res = new UnreadNoticeCountResDto();
 
         return userNotificationRepository.findBySsn(ssn)
                 .flatMap(userNotification -> {
+                    UnreadNoticeCountResDto res = new UnreadNoticeCountResDto();
                     res.setNotificationCount(userNotification.getRemainNotificationCount());
                     res.setSsn(ssn);
                     return Mono.just(res);
@@ -254,44 +258,43 @@ public class NoticeServiceImpl implements NoticeService {
                 .switchIfEmpty(Mono.error(new GeneralException("ssn.not.find", HttpStatus.NOT_FOUND)));
     }
 
-    //not used, because multi delete can delete single notice too.
-//    @Override
-//    public Mono<UserNotification> deleteSingleNotice(String ssn, String notificationId) {
-//        return userNotificationRepository.findBySsn(ssn)
-//                .map(res -> {
-//                    List<Notification> newList = res.getNotifications().stream()
-//                            .filter(notification -> !notification.getId().equals(notificationId))
-//                            .collect(Collectors.toList());
-////                    log.info("new list is: "+newList);
-//                    return new UserNotification(res.getId(),
-//                            res.getSsn(),
-//                            newList,
-//                            res.getLastSeenNotificationId(),
-//                            res.getPreviousNotificationId(),
-//                            res.getRemainNotificationCount());
-//                })
-//                .flatMap(this.userNotificationRepository::save);
-//    }
 
     @Override
     public Mono<UserNotification> deleteMultiNotice(String ssn, List<String> notificationIdList) {
-        //TODO: reduce unread-message-count based on business
-
+        //TODO: check if deleted message is lastSeenId.So,...
+/*
+ the filter operation inside the map function is not fully reactive as it involves iterating over a list.
+ To make it more reactive, you could use the Flux class instead of a list to filter the notifications.
+ */
         return userNotificationRepository.findBySsn(ssn)
-                .map(res -> {
-                    List<Notification> newList = notificationIdList.isEmpty() ? Collections.emptyList() :
-                            res.getNotifications().stream()
-                                    .filter(notification -> !notificationIdList.contains(notification.getId()))
-                                    .collect(Collectors.toList());
-                    return new UserNotification(res.getId(),
+                .flatMap(res -> {
+                    Flux<Notification> notifications = notificationIdList.isEmpty() ?
+                            Flux.empty() :
+                            Flux.fromIterable(res.getNotifications()).filter(notification -> !notificationIdList.contains(notification.getId()));
+
+                    if ((notificationIdList.size() - 1) > res.getLastSeenNotificationIndex())
+                        return Mono.error(new GeneralException("deleted.count.more.than.read", HttpStatus.BAD_REQUEST));
+
+                    return notifications.collectList().map(newList -> new UserNotification(
+                            res.getId(),
                             res.getSsn(),
                             newList,
-                            res.getLastSeenNotificationId(),
-                            res.getPreviousNotificationId(),
-                            res.getRemainNotificationCount());
+                            newList.isEmpty() ? "" : res.getLastSeenNotificationId(),
+                            newList.isEmpty() ? 0 : res.getLastSeenNotificationIndex() - notificationIdList.size() + 1,
+                            newList.isEmpty() ? -1 : setPreviousIndex(res.getPreviousNotificationIndex(), notificationIdList.size()),
+                            newList.isEmpty() ? 0 : res.getRemainNotificationCount()
+                    ));
                 })
                 .switchIfEmpty(Mono.error(new GeneralException("ssn.not.find", HttpStatus.NOT_FOUND)))
                 .flatMap(this.userNotificationRepository::save);
+
+    }
+
+    private Integer setPreviousIndex(Integer preInx, int size) {
+        if ((preInx - size + 1) > -2)
+            return preInx - size + 1;
+        else
+            return -1;
 
     }
 }

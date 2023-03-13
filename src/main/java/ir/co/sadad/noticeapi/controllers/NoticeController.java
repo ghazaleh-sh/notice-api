@@ -108,12 +108,6 @@ public class NoticeController {
         return noticeService.unreadNoticeCount(ssn).map((res -> ResponseEntity.ok().body(res)));
     }
 
-//    @DeleteMapping(value = "/delete")
-//    public Mono<ResponseEntity<UserNotification>> deleteSingleNotice(@RequestParam("ssn") String ssn,
-//                                                                     @RequestParam("notificationId") String notificationId) {
-//        return noticeService.deleteSingleNotice(ssn, notificationId).map(res -> ResponseEntity.ok().body(res));
-//    }
-
     @Operation(summary = "سرویس حذف پیام/پیام ها",
             description = "این سرویس پیام های انتخابی کاربر را حذف مینماید.")
     @PutMapping(value = "/multi-delete")
