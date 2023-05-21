@@ -20,7 +20,6 @@ import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
 
-import java.util.List;
 
 import static ir.co.sadad.noticeapi.configs.Constants.SSN;
 
@@ -87,33 +86,52 @@ public class NoticeController {
     @GetMapping(value = "/notifications")
     public Mono<ResponseEntity<UserNoticeListResDto>> getNotifications(@RequestHeader(name = HttpHeaders.AUTHORIZATION) String authToken,
                                                                        @RequestHeader(SSN) @Parameter(hidden = true) String ssn,
-                                                                       @RequestParam(value = "type", required = false) String type) {
-        return noticeService.userNoticeList(ssn, type).map((res -> ResponseEntity.ok().body(res)));
+                                                                       @RequestParam(value = "page") int page,
+                                                                       @RequestParam(value = "notificationType") String notificationType) {
+        return noticeService.userNoticeList(ssn, notificationType, page).map((res -> ResponseEntity.ok().body(res)));
     }
 
     @Operation(summary = "سرویس دریافت آخرین پیام مشاهده شده",
-            description = "این سرویس شناسه آخرین پیام مشاهده شده توسط کاربر مربوطه را ذخیره مینماید.")
+            description = "این سرویس creationDate آخرین پیام مشاهده شده توسط کاربر مربوطه را ذخیره و تعداد پیام های خوانده نشده را صفر مینماید.")
     @PutMapping(value = "/lastSeen")
-    public Mono<ResponseEntity<UserNoticeListResDto>> getLastSeenNotification(@RequestHeader(name = HttpHeaders.AUTHORIZATION) String authToken,
+    public Mono<ResponseEntity<LastSeenResDto>> getLastSeenNotification(@RequestHeader(name = HttpHeaders.AUTHORIZATION) String authToken,
                                                                               @RequestHeader(SSN) @Parameter(hidden = true) String ssn,
-                                                                              @RequestParam("lastSeenId") String lastSeenId) {
-        return noticeService.UserLastSeenId(ssn, lastSeenId).map((res -> ResponseEntity.ok().body(res)));
+                                                                              @RequestParam("lastSeenCampaign") Long lastSeenCampaign,
+                                                                              @RequestParam("lastSeenTransaction") Long lastSeenTransaction) {
+        return noticeService.UserLastSeenId(ssn, lastSeenCampaign, lastSeenTransaction).map((res -> ResponseEntity.ok().body(res)));
     }
 
     @Operation(summary = "سرویس تعداد پیام های خوانده نشده",
             description = "این سرویس تعداد پیام های خوانده نشده کاربر را برمیگرداند.")
-    @GetMapping(value = "/count")
+    @GetMapping(value = "/unread-count")
     public Mono<ResponseEntity<UnreadNoticeCountResDto>> getNotificationCount(@RequestHeader(name = HttpHeaders.AUTHORIZATION) String authToken,
                                                                               @RequestHeader(SSN) @Parameter(hidden = true) String ssn) {
         return noticeService.unreadNoticeCount(ssn).map((res -> ResponseEntity.ok().body(res)));
     }
 
+
     @Operation(summary = "سرویس حذف پیام/پیام ها",
-            description = "این سرویس پیام های انتخابی کاربر را حذف مینماید.")
+            description = "این سرویس پیام های انتخابی کاربر را حذف مینماید. در صورتی که پیامی وارد نشود، کل پیام های مربوط به نوع اعلان حذف خواهد شد")
     @PutMapping(value = "/multi-delete")
     public Mono<ResponseEntity<UserNotification>> deleteMultiNotice(@RequestHeader(name = HttpHeaders.AUTHORIZATION) String authToken,
                                                                     @RequestHeader(SSN) @Parameter(hidden = true) String ssn,
-                                                                    @RequestBody List<String> notificationIdList) {
-        return noticeService.deleteMultiNotice(ssn, notificationIdList).map(res -> ResponseEntity.ok().body(res));
+                                                                    @RequestBody DeleteNoticeReqDto deleteNoticeReqDto) {
+        return noticeService.deleteMultiNotice(ssn, deleteNoticeReqDto).map(res -> ResponseEntity.ok().body(res));
     }
+
+//    @Operation(summary = "سرویس کلیر کردن پیام های خوانده نشده",
+//            description = "این سرویس تعداد پیام های خوانده نشده کاربر را صفر خواهد کرد.")
+//    @ResponseStatus(value = HttpStatus.NO_CONTENT)
+//    @GetMapping(value = "/clear")
+//    public Mono<ResponseEntity<Void>> getClearCount(@RequestHeader(name = HttpHeaders.AUTHORIZATION) String authToken,
+//                                                                              @RequestHeader(SSN) @Parameter(hidden = true) String ssn) {
+//        return noticeService.clearUnreadCount(ssn).map((res -> ResponseEntity.noContent().build()));
+//    }
+
+//
+//    @PostMapping(value = "/delete")
+//    public void resetCountJob() {
+//        noticeService.resetNoticeCountJob();
+//        new ResponseEntity<>(HttpStatus.OK);
+//    }
 }

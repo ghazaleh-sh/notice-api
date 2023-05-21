@@ -11,7 +11,7 @@ import java.util.List;
  * service for sending notices to users and getting user notices data
  *
  * @author g.shahrokhabadi
- * created on 2021/12/28
+ * created on 2022/12/28
  */
 public interface NoticeService {
 
@@ -19,13 +19,15 @@ public interface NoticeService {
 
     Mono<SendCampaignNoticeResDto> sendCampaignNotice(SendCampaignNoticeReqDto campaignNoticeReqDto, FilePart file);
 
-    Mono<UserNoticeListResDto> userNoticeList(String ssn, String type);
+    Mono<UserNoticeListResDto> userNoticeList(String ssn, String type, int page);
 
-    Mono<UserNoticeListResDto> UserLastSeenId(String ssn, String lastSeenId);
+    Mono<LastSeenResDto> UserLastSeenId(String ssn, Long lastSeenCampaign, Long lastSeenTransaction);
 
     Mono<UnreadNoticeCountResDto> unreadNoticeCount(String ssn);
 
-//    Mono<UserNotification> deleteSingleNotice(String ssn, String notificaionId);
+    Mono<UserNotification> deleteMultiNotice(String ssn, DeleteNoticeReqDto deleteNoticeReqDto);
 
-    Mono<UserNotification> deleteMultiNotice(String ssn, List<String> notificaionIdList);
+//    Mono<Void> clearUnreadCount(String ssn);
+
+//    void resetNoticeCountJob();
 }

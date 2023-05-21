@@ -3,7 +3,8 @@ package ir.co.sadad.noticeapi.services;
 import ir.co.sadad.noticeapi.dtos.SendSingleNoticeReqDto;
 import ir.co.sadad.noticeapi.dtos.SendSingleNoticeResDto;
 import ir.co.sadad.noticeapi.models.Notification;
-import ir.co.sadad.noticeapi.repositories.NotificationRepository;
+import ir.co.sadad.noticeapi.models.UserNotification;
+import ir.co.sadad.noticeapi.repositories.UserNotificationRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.core.reactive.ReactiveKafkaConsumerTemplate;
@@ -12,6 +13,9 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * a service as reactiveKafkaSource
@@ -26,7 +30,7 @@ public class ReactiveConsumerService {
 
     private final Scheduler scheduler = Schedulers.newSingle("sample", true);
 
-    private final NotificationRepository notificationRepository;
+    private final UserNotificationRepository userNotificationRepository;
 
     private final ReactiveKafkaConsumerTemplate<String, SendSingleNoticeReqDto> reactiveKafkaConsumerTemplate;
 
@@ -58,17 +62,28 @@ public class ReactiveConsumerService {
     }
 
     private Mono<String> storeInDB(SendSingleNoticeReqDto singleNoticeReqDto) {
-        log.info("Successfully processed singleNoticeReqDto with title {} from Kafka", singleNoticeReqDto.getTitle());
+        log.info("Successfully processed singleNoticeReqDto with title {} from Kafka", singleNoticeReqDto.getDate());
         SendSingleNoticeResDto res = new SendSingleNoticeResDto();
+
+        List<Notification> notice = new ArrayList<>();
+        notice.add(Notification.builder()
+                .account(singleNoticeReqDto.getAccount())
+                .balance(singleNoticeReqDto.getBalance())
+                .withdraw(singleNoticeReqDto.getWithdraw())
+                .date(singleNoticeReqDto.getDate())
+                .bankName(singleNoticeReqDto.getBankName())
+                .type("1")
+                .build());
 
         return Mono
                 .just(singleNoticeReqDto)
-                .flatMap(p -> notificationRepository.insert(Notification
+                .flatMap(p -> userNotificationRepository.insert(UserNotification
                         .builder()
-                        .title(p.getTitle())
-                        .description(p.getDescription())
-                        .date(p.getDate())
-                        .type("1")
+                        .ssn(p.getSsn())
+                        .notificationTransactions(notice)
+//                        .lastSeenNotificationId()
+//                        .remainNotificationCount()
+//                        .notificationCount()
                         .build()))
 //                .map(notif -> {
 //                    res.setId(notif.getId());
@@ -77,7 +92,7 @@ public class ReactiveConsumerService {
 //                    return res;
 //                });
                 .doOnSuccess(result->System.out.print("Message saved in MongoDB with id: " + result.getId()))
-                .map(Notification::getId);
+                .map(UserNotification::getId);
 //            return Mono.empty();
     }
 

@@ -79,20 +79,11 @@ public class ApiError {
     public void addValidationError(String field, String object,
                                    String code, String message, String localizedMessage) {
         addSubError(ApiValidationError.builder()
-//                .field(field)
+                .field(field)
                 .localizedMessage(localizedMessage)
                 .message(message)
                 .code(code)
-//                .object(object)
-                .build());
-    }
-
-    public void addValidationError(String code,
-                                   String message, String localizedMessage) {
-        addSubError(ApiValidationError.builder()
-                .code(code)
-                .message(message)
-                .localizedMessage(localizedMessage)
+                .object(object)
                 .build());
     }
 

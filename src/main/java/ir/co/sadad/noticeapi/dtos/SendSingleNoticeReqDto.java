@@ -12,13 +12,24 @@ public class SendSingleNoticeReqDto implements Serializable {
 
     private static final long serialVersionUID = 7044673541516162886L;
 
-    @Schema(title = "عنوان اعلان")
-    @NotNull(message = "title.is.required")
-    private String title;
+    @Schema(title = "کد ملی کاربر")
+    @NotNull(message = "ssn.is.required")
+    private String ssn;
 
-    @Schema(title = "توضیحات اعلان")
-    @NotNull(message = "description.is.required")
-    private String description;
+    @Schema(title = "مقدار تراکنش")
+    @NotNull(message = "balance.is.required")
+    private String balance;
+
+    @Schema(title = "شماره حساب")
+    @NotNull(message = "account.is.required")
+    private String account;
+
+    @Schema(title = "مانده موجودی")
+    @NotNull(message = "withdraw.is.required")
+    private String withdraw;
+
+    @Schema(title = "نام بانک")
+    private String bankName;
 
     @Schema(title = "تاریخ اعلان-epoch")
     @NotNull(message = "date.is.required")

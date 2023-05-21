@@ -57,7 +57,7 @@ public class ReactiveExceptionHandler extends AbstractErrorWebExceptionHandler {
 
         Throwable error = getError(request);
         log.error("An error has been occurred", error);
-        ApiError apiError = ApiError.builder().build();
+        ApiError apiError;
 
 
         if (error instanceof GeneralException) {
@@ -78,6 +78,8 @@ public class ReactiveExceptionHandler extends AbstractErrorWebExceptionHandler {
 
             if (ex.getMessage() != null) {
                 ApiSubError subError = new ApiValidationError(
+                        null,
+                        null,
                         "E" + HttpStatus.BAD_REQUEST.value() + "NOTC",
                         initializeMessage(ex.getMessage(), LOCALE_EN),
                         initializeMessage(ex.getMessage().substring(ex.getMessage().indexOf(":") + 1).trim(), LOCALE_FA)

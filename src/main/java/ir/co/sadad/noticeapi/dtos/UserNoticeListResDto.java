@@ -14,9 +14,18 @@ public class UserNoticeListResDto {
     @Schema(title = "کد ملی")
     private String ssn;
 
-    @Schema(title = "شناسه آخرین پیام دیده شده توسط کاربر")
-    private String lastSeenId;
+    @Schema(title = "تاریخ ایجاد مربوط به آخرین پیام دیده شده کمپین توسط کاربر")
+    private Long lastSeenCampaign;
+
+    @Schema(title = "تاریخ ایجاد مربوط به آخرین پیام دیده شده تراکنش ها توسط کاربر")
+    private Long lastSeenTransaction;
 
     @Schema(title = "لیست پیام ها")
     private List<Notification> notifications;
+
+    @Schema(title = "تعداد کل صفحات")
+    private Integer totalPages;
+
+    @Schema(title = "شماره صفحه جاری")
+    private Integer currentPage;
 }

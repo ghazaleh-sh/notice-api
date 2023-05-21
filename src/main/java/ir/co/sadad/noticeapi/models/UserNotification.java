@@ -29,27 +29,32 @@ public class UserNotification implements Serializable {
     private String ssn;
 
     /**
-     * notifications list of user
+     * notifications list of user for single notices
      */
-    private List<Notification> notifications;
+    private List<Notification> notificationTransactions;
 
     /**
-     * id of last seen notice
+     * notifications list of user for campaign notices - just keep creationDate of each notification record
      */
-    private String lastSeenNotificationId;
+    private List<Long> notificationCampaignsCreateDate;
 
     /**
-     * index of last seen notice
+     * creation date of last seen campaign notice
      */
-    private Integer lastSeenNotificationIndex;
+    private Long lastSeenCampaign;
 
     /**
-     *index of previous notice which seen by user
+     * creation date of last seen transaction notice
      */
-    private Integer previousNotificationIndex;
+    private Long lastSeenTransaction;
 
     /**
      * unread notices count
      */
-    private Long remainNotificationCount;
+    private Integer remainNotificationCount;
+
+    /**
+     * all user's notifications count
+     */
+    private Integer notificationCount;
 }

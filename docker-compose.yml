@@ -1,0 +1,29 @@
+version: '3.3'
+services:
+  notice-api:
+    image: repo.sadad.co.ir/repository/baam-docker-registry/notice-api:BUILD_NUMBER
+    container_name: notice-api
+    hostname: notice-api
+    networks:
+      neo-baam:
+        aliases:
+          - notice-api
+    ports:
+      - 8519:8519
+      - 1717:1717
+    volumes:
+    - /opt/configs/notice-api:/opt/configs/notice-api
+    - /var/log/notice-api:/var/log/notice-api
+    tty : true
+    extra_hosts:
+      - config-srv:192.168.53.73
+    environment:
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE}
+      - JVM_OPTS=-Dfile.encoding=UTF8
+    working_dir: /
+    build : .
+    restart : always
+    command: [ "/usr/bin/java", "-jar", "/notice-api-0.0.1-SNAPSHOT.jar" ]
+networks:
+  neo-baam:
+    driver: bridge

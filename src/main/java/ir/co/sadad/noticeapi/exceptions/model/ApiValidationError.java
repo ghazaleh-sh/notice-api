@@ -12,32 +12,36 @@ public class ApiValidationError implements ApiSubError {
     /**
      * obj of error
      */
-    private String object;
+    private final String object;
 
     /**
      * violated field
      */
-    private String field;
+    private final String field;
 
     /**
      * exception code
      */
-    private String code;
+    private final String code;
 
     /**
      * message
      */
-    private String message;
+    private final String message;
 
     /**
      * translated message
      */
-    private String localizedMessage;
+    private final String localizedMessage;
 
     @Builder
-    public ApiValidationError(String code,
+    public ApiValidationError(String object,
+                              String field,
+                              String code,
                               String message,
                               String localizedMessage) {
+        this.object = object;
+        this.field = field;
         this.code = code;
         this.message = message;
         this.localizedMessage = localizedMessage;

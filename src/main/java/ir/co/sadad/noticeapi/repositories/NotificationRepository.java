@@ -9,4 +9,6 @@ import reactor.core.publisher.Mono;
 public interface NotificationRepository extends ReactiveMongoRepository<Notification, String> {
 
     Mono<Notification> findByDateAndType(Long date, String type);
+
+    Mono<Notification> findByCreationDate(Long creationDate);
 }

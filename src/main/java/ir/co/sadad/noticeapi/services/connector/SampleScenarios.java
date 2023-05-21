@@ -62,23 +62,23 @@ public class SampleScenarios {
             return KafkaReceiver.create(receiverOptions(Collections.singletonList(topic)).commitInterval(Duration.ZERO))
                     .receive()
                     .publishOn(scheduler)
-                    .concatMap(m -> storeInDB(m.value())
-                            .thenEmpty(m.receiverOffset().commit()))
+//                    .concatMap(m -> storeInDB(m.value())
+//                            .thenEmpty(m.receiverOffset().commit()))
                     .retry()
                     .doOnCancel(() -> close());
         }
-        public Mono<String> storeInDB(SendSingleNoticeReqDto singleNoticeReqDto) {
-            log.info("Successfully processed singleNoticeReqDto with title {} from Kafka", singleNoticeReqDto.getTitle());
-            return notificationRepository.insert(Notification
-                    .builder()
-                    .title(singleNoticeReqDto.getTitle())
-                    .description(singleNoticeReqDto.getDescription())
-                    .date(singleNoticeReqDto.getDate())
-                    .type("1")
-                    .build()
-            ).map(Notification::getId);
-//            return Mono.empty();
-        }
+//        public Mono<String> storeInDB(SendSingleNoticeReqDto singleNoticeReqDto) {
+//            log.info("Successfully processed singleNoticeReqDto with title {} from Kafka", singleNoticeReqDto.getTitle());
+//            return notificationRepository.insert(Notification
+//                    .builder()
+//                    .title(singleNoticeReqDto.getTitle())
+//                    .description(singleNoticeReqDto.getDescription())
+//                    .date(singleNoticeReqDto.getDate())
+//                    .type("1")
+//                    .build()
+//            ).map(Notification::getId);
+////            return Mono.empty();
+//        }
 
         public void close() {
             super.close();

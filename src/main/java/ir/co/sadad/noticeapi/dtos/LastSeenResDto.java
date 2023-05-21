@@ -3,14 +3,11 @@ package ir.co.sadad.noticeapi.dtos;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
-@Schema(title = "آبجکت پاسخ تعداد پیامهای خوانده نشده")
+@Schema(title = "آبجکت آخرین پیام های دیده شده")
 @Data
-public class UnreadNoticeCountResDto {
+public class LastSeenResDto {
 
-    @Schema(title = "تعداد پیام های خوانده نشده")
-    private Integer remainNotificationCount;
-
-    @Schema(title = "کدملی کاربر")
+    @Schema(title = "کد ملی")
     private String ssn;
 
     @Schema(title = "تاریخ ایجاد مربوط به آخرین پیام دیده شده کمپین توسط کاربر")
