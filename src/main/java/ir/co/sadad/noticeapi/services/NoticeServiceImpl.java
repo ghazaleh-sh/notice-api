@@ -14,6 +14,7 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.Charsets;
 import org.apache.commons.io.IOUtils;
+import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.buffer.DataBufferUtils;
 import org.springframework.http.HttpStatus;
@@ -26,8 +27,10 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Collectors;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -46,61 +49,6 @@ public class NoticeServiceImpl implements NoticeService {
     @Value("${notifications.page-size}")
     private int pageSize;
 
-    //    @Value("${notifications.job.max-count}")
-    private int MAXIMUM_NOTIFICATIONS = 2;
-
-    //just sample - we should use kafka
-    @Override
-    public Mono<SendSingleNoticeResDto> sendSingleNotice(SendSingleNoticeReqDto singleNoticeReqDto) {
-        SendSingleNoticeResDto res = new SendSingleNoticeResDto();
-
-        List<Notification> notice = new ArrayList<>();
-        notice.add(Notification.builder()
-                .creationDate(System.currentTimeMillis())
-                .account(singleNoticeReqDto.getAccount())
-                .balance(singleNoticeReqDto.getBalance())
-                .withdraw(singleNoticeReqDto.getWithdraw())
-                .date(singleNoticeReqDto.getDate())
-                .bankName(singleNoticeReqDto.getBankName())
-                .type(NoticeType.TRANSACTION.getValue())
-                .build());
-
-        return Mono
-                .just(singleNoticeReqDto)
-                .flatMap(currentDto ->
-                        userNotificationRepository.findBySsn(currentDto.getSsn())
-                                .flatMap(userNotif -> {
-                                    List<Notification> notifsOfUser = userNotif != null ? userNotif.getNotificationTransactions() : new ArrayList<>();
-                                    if (notifsOfUser == null) notifsOfUser = new ArrayList<>();
-                                    notifsOfUser.add(notice.get(0));
-                                    assert userNotif != null;
-                                    userNotif.setNotificationTransactions(notifsOfUser);
-                                    userNotif.setRemainNotificationCount(userNotif.getRemainNotificationCount() + 1);
-                                    userNotif.setNotificationCount(userNotif.getNotificationCount() + 1);
-                                    success.getAndIncrement();
-                                    return userNotificationRepository.save(userNotif);
-
-                                })
-                                .switchIfEmpty(Mono.defer(() -> userNotificationRepository.insert(UserNotification
-                                        .builder()
-                                        .ssn(currentDto.getSsn())
-                                        .notificationTransactions(notice)
-                                        .notificationCampaignsCreateDate(null)
-                                        .lastSeenCampaign(-1L)
-                                        .lastSeenTransaction(-1L)
-                                        .remainNotificationCount(1)
-                                        .notificationCount(1)
-                                        .build())))
-
-                                .onErrorMap(throwable -> new ValidationException(throwable.getMessage(), "error.on.save.user.notification"))
-
-                                .flatMap(notif -> {
-                                    res.setId(notif.getId());
-                                    res.setSsn(singleNoticeReqDto.getSsn());
-                                    res.setStatus("success");
-                                    return Mono.just(res);
-                                }));
-    }
 
     @Override
     @SneakyThrows
@@ -177,16 +125,15 @@ public class NoticeServiceImpl implements NoticeService {
     private Mono<Notification> saveNotification(SendCampaignNoticeReqDto campaignNoticeReqDto) {
         return Mono
                 .just(campaignNoticeReqDto)
-                .flatMap(camp -> notificationRepository.findByDateAndType(camp.getDate(), "2"))
-                .cache()
-                .switchIfEmpty(Mono.defer(() -> notificationRepository.insert(Notification
+//                .flatMap(camp -> notificationRepository.findByDateAndType(camp.getDate(), "2"))
+//                .cache()
+                .flatMap(camp -> notificationRepository.insert(Notification
                         .builder()
                         .creationDate(System.currentTimeMillis())
-                        .description(campaignNoticeReqDto.getDescription())
-                        .title(campaignNoticeReqDto.getTitle())
-                        .date(campaignNoticeReqDto.getDate())
+                        .description(camp.getDescription())
+                        .title(camp.getTitle())
                         .type(NoticeType.CAMPAIGN.getValue())
-                        .build())))
+                        .build()))
                 .onErrorMap(throwable -> new ValidationException(throwable.getMessage(), "error.on.save.notification"));
     }
 
@@ -199,12 +146,10 @@ public class NoticeServiceImpl implements NoticeService {
                 .builder()
                 .ssn(ssn)
                 .notificationCampaignsCreateDate(notifsOfUser)
-                .lastSeenCampaign(-1L)
-                .lastSeenTransaction(-1L)
+                .lastSeenCampaign(0L)
+                .lastSeenTransaction(0L)
                 .remainNotificationCount(1)
                 .notificationCount(1)
-//                .lastSeenNotificationIndex(0)
-//                .previousNotificationIndex(-1)
                 .build())
                 .onErrorMap(throwable -> new GeneralException(throwable.getMessage(), "error.on.save.user.notification"));
         // just to see what is being emitted
@@ -217,64 +162,57 @@ public class NoticeServiceImpl implements NoticeService {
         return userNotificationRepository.findBySsn(ssn)
                 .switchIfEmpty(Mono.error(new GeneralException("ssn.not.find", HttpStatus.NOT_FOUND)))
                 .flatMap(userNotification -> {
-                    // Atomic to prevent race condition,
-                    AtomicLong totalItems = new AtomicLong(0);
-                    AtomicInteger totalPages = new AtomicInteger(0);
 
-                    AtomicInteger startIndex = new AtomicInteger(0);
-                    AtomicInteger endIndex = new AtomicInteger(0);
-
-                    Flux<Notification> notificationsFlux = null;
+                    Flux<Notification> notificationsFlux;
 
                     if (type.equals(NoticeType.TRANSACTION.getValue())) {
                         notificationsFlux = Flux.fromIterable(userNotification.getNotificationTransactions());
 
-                        notificationsFlux.count().subscribe(count -> {
-                            totalItems.set(count);
-                            // ceil method to round up the argument to the nearest integer value
-                            totalPages.set((int) Math.ceil((double) totalItems.get() / pageSize));
-                        });
-                    }
-
-
-                    if (type.equals(NoticeType.CAMPAIGN.getValue())) {
+                    } else if (type.equals(NoticeType.CAMPAIGN.getValue())) {
                         Flux<Long> notificationsIdFlux = Flux.fromIterable(userNotification.getNotificationCampaignsCreateDate());
 
-                        notificationsIdFlux.count().subscribe(count -> {
-                            totalItems.set(count);
-                            // ceil method to round up the argument to the nearest integer value
-                            totalPages.set((int) Math.ceil((double) totalItems.get() / pageSize));
-                        });
+                        notificationsFlux = notificationsIdFlux
+                                //processing each notificationId in parallel
+                                .flatMapSequential(notificationId ->
+                                        notificationRepository.findByCreationDate(notificationId)
+                                                .switchIfEmpty(Mono.empty())
+                                )
+                                .filter(Objects::nonNull); // Filter out empty values
 
-                        notificationsFlux = notificationsIdFlux.flatMap(notificationRepository::findByCreationDate)
-                                .collectList()
-                                .flatMapMany(Flux::fromIterable);
+                    } else {
+                        return Mono.error(new GeneralException("type.not.find", HttpStatus.BAD_REQUEST));
                     }
 
-
-                    if (totalPages.get() != 0 && page > totalPages.get())
-                        return Mono.error(new GeneralException("page.is.more.than.total", HttpStatus.BAD_REQUEST));
-
-                    startIndex.set((page - 1) * pageSize);
-                    endIndex.set((int) Math.min(startIndex.get() + pageSize, totalItems.get()));
-
-                    /*
-                    for concerning about backpressure when collecting the list of notifications,
-                    you can use the Flux.fromIterable method to convert the list to a Flux
-                    and then apply backpressure operators on it.
-                    */
                     return notificationsFlux
 //                            .switchIfEmpty(Flux.empty())
                             .sort((o1, o2) -> (int) (o2.getCreationDate() - o1.getCreationDate()))
-                            .onBackpressureBuffer(20) // buffer up to 20 items
-                            .limitRate(20) // limit the rate at which items are emitted to 20
+//                            .onBackpressureBuffer(20) // buffer up to 20 items
+//                            .limitRate(20) // limit the rate at which items are emitted to 20
                             .collectList()
                             .flatMap(notifications -> {
+
+                                int totalItems = notifications.size();
+                                // ceil method to round up the argument to the nearest integer value
+                                int totalPages = (int) Math.ceil((double) totalItems / pageSize);
+
+                                if (totalPages != 0 && page > totalPages) {
+                                    return Mono.error(new GeneralException("page.is.more.than.total", HttpStatus.BAD_REQUEST));
+                                }
+
+//                                log.info("totalItems and totalPages : " + totalItems + "  " + totalPages);
+
+                                int startIndex = (page - 1) * pageSize;
+                                int endIndex = Math.min(startIndex + pageSize, totalItems);
+
+                                startIndex = Math.max(startIndex, 0);  // Ensure startIndex is not negative
+                                endIndex = Math.min(endIndex, totalItems);  // Ensure endIndex does not exceed the list size
+
+
                                 UserNoticeListResDto res = new UserNoticeListResDto();
-                                res.setSsn(ssn);
+
                                 res.setCurrentPage(page);
-                                res.setTotalPages(totalPages.get());
-                                res.setNotifications(notifications.isEmpty() ? Collections.emptyList() : notifications.subList(startIndex.get(), endIndex.get()));
+                                res.setTotalPages(totalPages);
+                                res.setNotifications(notifications.isEmpty() ? Collections.emptyList() : notifications.subList(startIndex, endIndex));
                                 res.setLastSeenCampaign(userNotification.getLastSeenCampaign());
                                 res.setLastSeenTransaction(userNotification.getLastSeenTransaction());
 
@@ -285,26 +223,7 @@ public class NoticeServiceImpl implements NoticeService {
 
     }
 
-    //    @Override
-//    public Mono<Void> clearUnreadCount(String ssn) {
-//        return userNotificationRepository.findBySsn(ssn)
-//                .switchIfEmpty(Mono.error(new GeneralException("ssn.not.find", HttpStatus.NOT_FOUND)))
-//                .map(res -> new UserNotification(res.getId(),
-//                        res.getSsn(),
-//                        res.getNotifications(),
-//                        res.getLastSeenNotificationId(),
-//                        0,
-//                        res.getNotificationCount()
-//                ))
-//                .flatMap(this.userNotificationRepository::save)
-//                .then();
-////                .map(user -> {
-////                    UnreadNoticeCountResDto result = new UnreadNoticeCountResDto();
-////                    result.setRemainNotificationCount(user.getRemainNotificationCount());
-////                    result.setSsn(ssn);
-////                    return result;
-////                });
-//    }
+
     @Override
     public Mono<LastSeenResDto> UserLastSeenId(String ssn, Long lastSeenCampaign, Long lastSeenTransaction) {
 
@@ -314,8 +233,8 @@ public class NoticeServiceImpl implements NoticeService {
                         res.getSsn(),
                         res.getNotificationTransactions(),
                         res.getNotificationCampaignsCreateDate(),
-                        lastSeenCampaign,
-                        lastSeenTransaction,
+                        lastSeenCampaign != null ? lastSeenCampaign : res.getLastSeenCampaign(),
+                        lastSeenTransaction != null ? lastSeenTransaction : res.getLastSeenTransaction(),
                         0,//res.getRemainNotificationCount(),
                         res.getNotificationCount()
                 )))
@@ -324,7 +243,6 @@ public class NoticeServiceImpl implements NoticeService {
                     LastSeenResDto result = new LastSeenResDto();
                     result.setLastSeenCampaign(user.getLastSeenCampaign());
                     result.setLastSeenTransaction(user.getLastSeenTransaction());
-                    result.setSsn(ssn);
                     return result;
                 });
     }
@@ -339,7 +257,6 @@ public class NoticeServiceImpl implements NoticeService {
                     res.setRemainNotificationCount(userNotification.getRemainNotificationCount());
                     res.setLastSeenCampaign(userNotification.getLastSeenCampaign());
                     res.setLastSeenTransaction(userNotification.getLastSeenTransaction());
-                    res.setSsn(ssn);
                     return Mono.just(res);
                 })
                 .switchIfEmpty(Mono.error(new GeneralException("ssn.not.find", HttpStatus.NOT_FOUND)));
@@ -364,10 +281,10 @@ public class NoticeServiceImpl implements NoticeService {
                                         userNotification.getSsn(),
                                         newList,
                                         userNotification.getNotificationCampaignsCreateDate(),
-                                        newList.isEmpty() ? -1L : userNotification.getLastSeenCampaign(),
-                                        newList.isEmpty() ? -1L
+                                        newList.isEmpty() ? 0L : userNotification.getLastSeenCampaign(),
+                                        newList.isEmpty() ? 0L
                                                 : deleteDto.getNotificationsByCreationDate().contains(userNotification.getLastSeenTransaction())
-                                                ? newList.stream().map(Notification::getCreationDate).filter(n -> n < userNotification.getLastSeenTransaction()).findFirst().orElse(-1L)
+                                                ? newList.stream().map(Notification::getCreationDate).filter(n -> n < userNotification.getLastSeenTransaction()).findFirst().orElse(0L)
                                                 : userNotification.getLastSeenTransaction(),
                                         newList.isEmpty() ? 0 : userNotification.getRemainNotificationCount(),
                                         newList.isEmpty() ? userNotification.getNotificationCampaignsCreateDate().size()
@@ -386,11 +303,11 @@ public class NoticeServiceImpl implements NoticeService {
                                         userNotification.getSsn(),
                                         userNotification.getNotificationTransactions(),
                                         newList,
-                                        newList.isEmpty() ? -1L
+                                        newList.isEmpty() ? 0L
                                                 : deleteDto.getNotificationsByCreationDate().contains(userNotification.getLastSeenCampaign())
-                                                ? newList.stream().filter(n -> n < userNotification.getLastSeenCampaign()).findFirst().orElse(-1L)
+                                                ? newList.stream().filter(n -> n < userNotification.getLastSeenCampaign()).findFirst().orElse(0L)
                                                 : userNotification.getLastSeenCampaign(),
-                                        newList.isEmpty() ? -1L : userNotification.getLastSeenTransaction(),
+                                        newList.isEmpty() ? 0L : userNotification.getLastSeenTransaction(),
                                         newList.isEmpty() ? 0 : userNotification.getRemainNotificationCount(),
                                         newList.isEmpty() ? userNotification.getNotificationTransactions().size() : userNotification.getNotificationCount()
                                                 - (userNotification.getNotificationCampaignsCreateDate().size() - newList.size())
@@ -402,12 +319,25 @@ public class NoticeServiceImpl implements NoticeService {
 
     }
 
-//    private Integer setPreviousIndex(Integer preInx, int size) {
-//        if ((preInx - size + 1) > -2)
-//            return preInx - size + 1;
-//        else
-//            return -1;
-//
+    //    @Override
+//    public Mono<Void> clearUnreadCount(String ssn) {
+//        return userNotificationRepository.findBySsn(ssn)
+//                .switchIfEmpty(Mono.error(new GeneralException("ssn.not.find", HttpStatus.NOT_FOUND)))
+//                .map(res -> new UserNotification(res.getId(),
+//                        res.getSsn(),
+//                        res.getNotifications(),
+//                        res.getLastSeenNotificationId(),
+//                        0,
+//                        res.getNotificationCount()
+//                ))
+//                .flatMap(this.userNotificationRepository::save)
+//                .then();
+////                .map(user -> {
+////                    UnreadNoticeCountResDto result = new UnreadNoticeCountResDto();
+////                    result.setRemainNotificationCount(user.getRemainNotificationCount());
+////                    result.setSsn(ssn);
+////                    return result;
+////                });
 //    }
 
 
@@ -444,39 +374,4 @@ public class NoticeServiceImpl implements NoticeService {
 //                    result.setSsn(ssn);
 //                    return result;
 //                });
-
-
-//    @Override // this service is called by another application Rest Api at midnight
-//    public void resetNoticeCountJob() {
-//
-//        userNotificationRepository.findAll()
-//                .filter(userNotification -> userNotification.getNotificationCount() > MAXIMUM_NOTIFICATIONS)
-//                .flatMap(this::deleteMoreThan5Hundred)
-//                .log()
-//                .subscribe(); //to execute the code inside the flatMap() operator.
-//
-//    }
-//
-//    private Mono<UserNotification> deleteMoreThan5Hundred(UserNotification user) {
-//        int deleteCount = user.getNotificationCount() - MAXIMUM_NOTIFICATIONS;
-//
-//        user.getNotifications().sort((o1, o2) -> (int) (o1.getCreationDate() - o2.getCreationDate()));
-//
-//        List<Notification> deleteNotifs = user.getNotifications().subList(0, deleteCount);
-//
-//        Flux<Notification> filteredNotifications = Flux.fromIterable(user.getNotifications())
-//                .filter(notification -> !deleteNotifs.contains(notification));
-//
-//        return filteredNotifications
-//                .collectList()
-//                .map(newList -> new UserNotification(
-//                        user.getId(),
-//                        user.getSsn(),
-//                        newList,
-//                        user.getLastSeenNotificationId(),
-//                        user.getRemainNotificationCount() > MAXIMUM_NOTIFICATIONS ? MAXIMUM_NOTIFICATIONS : user.getRemainNotificationCount(),
-//                        MAXIMUM_NOTIFICATIONS
-//                ))
-//                .flatMap(this.userNotificationRepository::save);
-//    }
 }

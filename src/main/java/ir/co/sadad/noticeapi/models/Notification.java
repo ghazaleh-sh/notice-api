@@ -24,10 +24,10 @@ public class Notification implements Serializable {
     private String id;
 
     /**
-     * date of notice release- base on epoch time (milliseconds)
+     * date of notice release- used for transactions
      */
-    @NotNull(message = "date.must.not.be.null")
-    private Long date;
+//    @NotNull(message = "date.must.not.be.null")
+    private String date;
 
     /**
      * date of notice created into userNotification collection - equivalent to System.currentTimeMillis()
@@ -37,7 +37,6 @@ public class Notification implements Serializable {
     /**
      * title of notice - for campaign notices
      */
-//    @NotNull(message = "title.must.not.be.null")
     private String title;
 
     /**
@@ -71,4 +70,9 @@ public class Notification implements Serializable {
      * bankName of notice- for under 30 T transactions
      */
     private String bankName;
+
+    /**
+     * transaction type- for under 30 T transactions
+     */
+    private String transactionType;
 }

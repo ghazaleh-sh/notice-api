@@ -5,8 +5,8 @@ import org.springframework.web.server.ServerWebExchangeDecorator;
 
 public class BodyCaptureExchange extends ServerWebExchangeDecorator {
 
-    private BodyCaptureRequest bodyCaptureRequest;
-    private BodyCaptureResponse bodyCaptureResponse;
+    private final BodyCaptureRequest bodyCaptureRequest;
+    private final BodyCaptureResponse bodyCaptureResponse;
 
     public BodyCaptureExchange(ServerWebExchange exchange) {
         super(exchange);

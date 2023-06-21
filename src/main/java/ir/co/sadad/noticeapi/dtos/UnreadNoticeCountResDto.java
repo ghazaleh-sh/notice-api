@@ -10,9 +10,6 @@ public class UnreadNoticeCountResDto {
     @Schema(title = "تعداد پیام های خوانده نشده")
     private Integer remainNotificationCount;
 
-    @Schema(title = "کدملی کاربر")
-    private String ssn;
-
     @Schema(title = "تاریخ ایجاد مربوط به آخرین پیام دیده شده کمپین توسط کاربر")
     private Long lastSeenCampaign;
 

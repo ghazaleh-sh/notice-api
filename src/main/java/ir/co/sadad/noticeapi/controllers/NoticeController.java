@@ -6,9 +6,9 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import ir.co.sadad.noticeapi.dtos.*;
-import ir.co.sadad.noticeapi.models.UserNotification;
+import ir.co.sadad.noticeapi.services.NoticeMidnightJobSservice;
 import ir.co.sadad.noticeapi.services.NoticeService;
-import ir.co.sadad.noticeapi.services.ReactiveConsumerService;
+import ir.co.sadad.noticeapi.services.PanelNoticeService;
 import ir.co.sadad.noticeapi.services.ReactiveProducerService;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
@@ -21,6 +21,8 @@ import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
 
 
+import javax.validation.Valid;
+
 import static ir.co.sadad.noticeapi.configs.Constants.SSN;
 
 @RestController
@@ -30,15 +32,18 @@ public class NoticeController {
 
     private final ReactiveProducerService producerService;
 
-    private final ReactiveConsumerService consumerService;
+    private final NoticeMidnightJobSservice jobSservice;
 
     private final NoticeService noticeService;
 
+    private final PanelNoticeService panelNoticeService;
+
 
     @SneakyThrows
-    @PostMapping(value = "/kafka/single-send", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public ResponseEntity<Void> sendSingleNoticeToKafka(@RequestBody SendSingleNoticeReqDto singleNoticeReqDto) throws InterruptedException {
-        producerService.send(singleNoticeReqDto);
+    @PostMapping(value = "/kafka/transaction", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public ResponseEntity<Void> sendTransactionToKafka(@RequestHeader(name = HttpHeaders.AUTHORIZATION) String authToken,
+                                                       @RequestBody @Valid TransactionNoticeReqDto transactionNoticeReqDto) {
+        producerService.send(transactionNoticeReqDto);
 //        consumerService.run();
         return new ResponseEntity<>(HttpStatus.OK);
 //                .map(r -> ResponseEntity.ok().<Void>build())
@@ -47,32 +52,23 @@ public class NoticeController {
 
     }
 
-    @GetMapping(value = "/kafka/consume")
-    public ResponseEntity<Void> consumeData() {
-        consumerService.consumeNotificationDTO().subscribe();
-        return new ResponseEntity<>(HttpStatus.OK);
-//                .map(r -> ResponseEntity.ok().<Void>build())
-//                .defaultIfEmpty(ResponseEntity.notFound().build());
+//    @GetMapping(value = "/kafka/consume")
+//    public ResponseEntity<Void> consumeData() {
+//        consumerService.consumeNotificationDTO().subscribe();
+//        return new ResponseEntity<>(HttpStatus.OK);
+////                .map(r -> ResponseEntity.ok().<Void>build())
+////                .defaultIfEmpty(ResponseEntity.notFound().build());
+////    }
+//
 //    }
 
-    }
-
-    //this is just for test
-    @PostMapping(value = "/kafka/sample")
-    public Mono<ResponseEntity<SendSingleNoticeResDto>> sendSingle(@RequestBody SendSingleNoticeReqDto singleNoticeReqDto) {
-        return noticeService.sendSingleNotice(singleNoticeReqDto).map((res -> {
-
-            return ResponseEntity.ok()
-                    .body(res);
-        }));
-    }
 
     @Operation(summary = "سرویس ارسال پیام کمپین",
             description = "این سرویس لیست کدهای ملی را به صورت فایل گرفته و پیام کمپین را برای آنها ذخیره مینماید.")
     @ApiResponse(responseCode = "200", content = @Content(schema = @Schema(implementation = SendCampaignNoticeResDto.class)))
     @PostMapping(value = "/campaign", consumes = {MediaType.MULTIPART_FORM_DATA_VALUE})
     public Mono<ResponseEntity<SendCampaignNoticeResDto>> sendCampaign(@RequestHeader(name = HttpHeaders.AUTHORIZATION) String authToken,
-                                                                       @RequestPart("message") SendCampaignNoticeReqDto campaignNoticeReqDto,
+                                                                       @RequestPart("message") @Valid SendCampaignNoticeReqDto campaignNoticeReqDto,
                                                                        @RequestPart("file") FilePart filePart) {
         return noticeService.sendCampaignNotice(campaignNoticeReqDto, filePart).map((res -> ResponseEntity.ok().body(res)));
     }
@@ -95,10 +91,10 @@ public class NoticeController {
             description = "این سرویس creationDate آخرین پیام مشاهده شده توسط کاربر مربوطه را ذخیره و تعداد پیام های خوانده نشده را صفر مینماید.")
     @PutMapping(value = "/lastSeen")
     public Mono<ResponseEntity<LastSeenResDto>> getLastSeenNotification(@RequestHeader(name = HttpHeaders.AUTHORIZATION) String authToken,
-                                                                              @RequestHeader(SSN) @Parameter(hidden = true) String ssn,
-                                                                              @RequestParam("lastSeenCampaign") Long lastSeenCampaign,
-                                                                              @RequestParam("lastSeenTransaction") Long lastSeenTransaction) {
-        return noticeService.UserLastSeenId(ssn, lastSeenCampaign, lastSeenTransaction).map((res -> ResponseEntity.ok().body(res)));
+                                                                        @RequestHeader(SSN) @Parameter(hidden = true) String ssn,
+                                                                        @RequestBody LastSeenReqDto lastSeenReqDto) {
+        return noticeService.UserLastSeenId(ssn, lastSeenReqDto.getLastSeenCampaign(), lastSeenReqDto.getLastSeenTransaction())
+                .map((res -> ResponseEntity.ok().body(res)));
     }
 
     @Operation(summary = "سرویس تعداد پیام های خوانده نشده",
@@ -112,11 +108,12 @@ public class NoticeController {
 
     @Operation(summary = "سرویس حذف پیام/پیام ها",
             description = "این سرویس پیام های انتخابی کاربر را حذف مینماید. در صورتی که پیامی وارد نشود، کل پیام های مربوط به نوع اعلان حذف خواهد شد")
-    @PutMapping(value = "/multi-delete")
-    public Mono<ResponseEntity<UserNotification>> deleteMultiNotice(@RequestHeader(name = HttpHeaders.AUTHORIZATION) String authToken,
-                                                                    @RequestHeader(SSN) @Parameter(hidden = true) String ssn,
-                                                                    @RequestBody DeleteNoticeReqDto deleteNoticeReqDto) {
-        return noticeService.deleteMultiNotice(ssn, deleteNoticeReqDto).map(res -> ResponseEntity.ok().body(res));
+    @ResponseStatus(value = HttpStatus.NO_CONTENT)
+    @DeleteMapping(value = "/delete")
+    public Mono<ResponseEntity<Void>> deleteMultiNotice(@RequestHeader(name = HttpHeaders.AUTHORIZATION) String authToken,
+                                                        @RequestHeader(SSN) @Parameter(hidden = true) String ssn,
+                                                        @RequestBody @Valid DeleteNoticeReqDto deleteNoticeReqDto) {
+        return noticeService.deleteMultiNotice(ssn, deleteNoticeReqDto).map(res -> ResponseEntity.noContent().build());
     }
 
 //    @Operation(summary = "سرویس کلیر کردن پیام های خوانده نشده",
@@ -128,10 +125,30 @@ public class NoticeController {
 //        return noticeService.clearUnreadCount(ssn).map((res -> ResponseEntity.noContent().build()));
 //    }
 
-//
-//    @PostMapping(value = "/delete")
-//    public void resetCountJob() {
-//        noticeService.resetNoticeCountJob();
-//        new ResponseEntity<>(HttpStatus.OK);
-//    }
+
+    @PostMapping(value = "/delete-job")
+    public void resetCountJob() {
+        jobSservice.resetNoticeCountJob();
+        new ResponseEntity<>(HttpStatus.OK);
+    }
+
+    /*--------------------panel Rest api--------------------*/
+
+    @Operation(summary = "سرویس بروز رسانی پیام کمپین")
+    @ResponseStatus(value = HttpStatus.NO_CONTENT)
+    @PutMapping(value = "/update")
+    public Mono<ResponseEntity<Void>> updateCampaignNotification(//@RequestHeader(name = HttpHeaders.AUTHORIZATION) String authToken,
+                                                                 @RequestBody UpdateCampaignNoticeDto campaignNoticeDto) {
+        return panelNoticeService.updateCampaignMessage(campaignNoticeDto)
+                .map(notification -> ResponseEntity.noContent().build());
+    }
+
+    @Operation(summary = "سرویس حذف پیام کمپین")
+    @ResponseStatus(value = HttpStatus.NO_CONTENT)
+    @DeleteMapping(value = "/delete-message/{notificationId}")
+    public Mono<ResponseEntity<Void>> deleteCampaignNotification(//@RequestHeader(name = HttpHeaders.AUTHORIZATION) String authToken,
+                                           @PathVariable("notificationId") Long notificationId) {
+        return panelNoticeService.deleteCampaignMessage(notificationId)
+                .map(notification -> ResponseEntity.noContent().build());
+    }
 }

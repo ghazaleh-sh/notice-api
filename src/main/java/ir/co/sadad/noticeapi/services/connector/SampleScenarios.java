@@ -1,14 +1,12 @@
 package ir.co.sadad.noticeapi.services.connector;
 
-import ir.co.sadad.noticeapi.dtos.SendSingleNoticeReqDto;
-import ir.co.sadad.noticeapi.models.Notification;
+import ir.co.sadad.noticeapi.dtos.TransactionNoticeReqDto;
 import ir.co.sadad.noticeapi.repositories.NotificationRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.common.serialization.IntegerDeserializer;
 import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.kafka.receiver.KafkaReceiver;
@@ -130,17 +128,17 @@ public class SampleScenarios {
                 disposable.dispose();
         }
 
-        public ReceiverOptions<Integer, SendSingleNoticeReqDto> receiverOptions() {
+        public ReceiverOptions<Integer, TransactionNoticeReqDto> receiverOptions() {
             Map<String, Object> props = new HashMap<>();
             props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
             props.put(ConsumerConfig.GROUP_ID_CONFIG, groupId);
             props.put(ConsumerConfig.CLIENT_ID_CONFIG, "sample-consumer");
             props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, IntegerDeserializer.class);
             props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, ir.co.sadad.noticeapi.dtos.serializes.KafkaValueDeserializer.class);
-            return ReceiverOptions.<Integer, SendSingleNoticeReqDto>create(props);
+            return ReceiverOptions.<Integer, TransactionNoticeReqDto>create(props);
         }
 
-        public ReceiverOptions<Integer, SendSingleNoticeReqDto> receiverOptions(Collection<String> topics) {
+        public ReceiverOptions<Integer, TransactionNoticeReqDto> receiverOptions(Collection<String> topics) {
             return receiverOptions()
                     .addAssignListener(p -> log.info("Group {} partitions assigned {}", groupId, p))
                     .addRevokeListener(p -> log.info("Group {} partitions revoked {}", groupId, p))

@@ -11,9 +11,6 @@ import java.util.List;
 @Data
 public class UserNoticeListResDto {
 
-    @Schema(title = "کد ملی")
-    private String ssn;
-
     @Schema(title = "تاریخ ایجاد مربوط به آخرین پیام دیده شده کمپین توسط کاربر")
     private Long lastSeenCampaign;
 

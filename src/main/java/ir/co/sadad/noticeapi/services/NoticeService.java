@@ -5,7 +5,6 @@ import ir.co.sadad.noticeapi.models.UserNotification;
 import org.springframework.http.codec.multipart.FilePart;
 import reactor.core.publisher.Mono;
 
-import java.util.List;
 
 /**
  * service for sending notices to users and getting user notices data
@@ -14,8 +13,6 @@ import java.util.List;
  * created on 2022/12/28
  */
 public interface NoticeService {
-
-    Mono<SendSingleNoticeResDto> sendSingleNotice(SendSingleNoticeReqDto singleNoticeReqDto);
 
     Mono<SendCampaignNoticeResDto> sendCampaignNotice(SendCampaignNoticeReqDto campaignNoticeReqDto, FilePart file);
 
@@ -27,7 +24,4 @@ public interface NoticeService {
 
     Mono<UserNotification> deleteMultiNotice(String ssn, DeleteNoticeReqDto deleteNoticeReqDto);
 
-//    Mono<Void> clearUnreadCount(String ssn);
-
-//    void resetNoticeCountJob();
 }

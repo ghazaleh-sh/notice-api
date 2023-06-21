@@ -15,8 +15,12 @@ import org.springframework.context.MessageSource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.BindingResult;
+import org.springframework.validation.FieldError;
+import org.springframework.web.bind.support.WebExchangeBindException;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.server.*;
+import org.springframework.web.server.ServerWebInputException;
 import reactor.core.publisher.Mono;
 
 import java.util.*;
@@ -59,52 +63,98 @@ public class ReactiveExceptionHandler extends AbstractErrorWebExceptionHandler {
         log.error("An error has been occurred", error);
         ApiError apiError;
 
+        switch (error.getClass().getSimpleName()) {
+            case "GeneralException":
+                BaseException ex = (BaseException) error;
+                apiError = ApiError.builder()
+                        .status(ex.getHttpStatusCode())
+                        .message(initializeMessage(ex.getCode(), LOCALE_EN))
+                        .localizedMessage(initializeMessage(ex.getCode(), LOCALE_FA))
+                        .code(ex.getCode())
+                        .extraData(ex.getExtraData())
+                        .build();
+                break;
 
-        if (error instanceof GeneralException) {
 
-            BaseException ex = (BaseException) error;
-            apiError = ApiError.builder()
-                    .status(ex.getHttpStatusCode())
-                    .message(initializeMessage(ex.getCode(), LOCALE_EN))
-                    .localizedMessage(initializeMessage(ex.getCode(), LOCALE_FA))
-                    .code(ex.getCode())
-                    .extraData(ex.getExtraData())
-                    .build();
+            case "ValidationException":
+                BaseException ex2 = (BaseException) error;
+                List<ApiSubError> subErrorList = new ArrayList<>();
 
-        } else if (error instanceof ValidationException) {
+                if (ex2.getMessage() != null) {
+                    ApiSubError subError = new ApiValidationError(
+                            null,
+                            null,
+                            "E" + HttpStatus.BAD_REQUEST.value() + "NOTC",
+                            initializeMessage(ex2.getMessage(), LOCALE_EN),
+                            initializeMessage(ex2.getMessage().substring(ex2.getMessage().indexOf(":") + 1).trim(), LOCALE_FA)
+                    );
+                    subErrorList.add(subError);
+                }
+                apiError = ApiError.builder()
+                        .status(ex2.getHttpStatusCode())
+                        .message(initializeMessage(ex2.getCode(), LOCALE_EN))
+                        .localizedMessage(initializeMessage(ex2.getCode(), LOCALE_FA))
+                        .code(ex2.getCode())
+                        .extraData(ex2.getExtraData())
+                        .subErrors(subErrorList)
+                        .build();
+                break;
 
-            BaseException ex = (BaseException) error;
-            List<ApiSubError> subErrorList = new ArrayList<>();
 
-            if (ex.getMessage() != null) {
-                ApiSubError subError = new ApiValidationError(
-                        null,
-                        null,
-                        "E" + HttpStatus.BAD_REQUEST.value() + "NOTC",
-                        initializeMessage(ex.getMessage(), LOCALE_EN),
-                        initializeMessage(ex.getMessage().substring(ex.getMessage().indexOf(":") + 1).trim(), LOCALE_FA)
-                );
-                subErrorList.add(subError);
-            }
+            case "ServerWebInputException":
+                apiError = ApiError.builder()
+                        .status(HttpStatus.BAD_REQUEST)
+                        .message(initializeMessage("PPA.general.validator.EBP40000001", LOCALE_EN))
+                        .localizedMessage(initializeMessage("PPA.general.validator.EBP40000001", LOCALE_FA))
+                        .code("E" + HttpStatus.BAD_REQUEST.value() + "NOTC")
+                        .build();
 
-            apiError = ApiError.builder()
-                    .status(ex.getHttpStatusCode())
-                    .message(initializeMessage(ex.getCode(), LOCALE_EN))
-                    .localizedMessage(initializeMessage(ex.getCode(), LOCALE_FA))
-                    .code(ex.getCode())
-                    .extraData(ex.getExtraData())
-                    .subErrors(subErrorList)
-                    .build();
+                break;
 
-        } else {
-            apiError = ApiError.builder()
-                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .message(initializeMessage(ERROR_INTERNAL_SERVER, LOCALE_EN))
-                    .localizedMessage(initializeMessage(ERROR_INTERNAL_SERVER, LOCALE_FA))
-                    .code(ERROR_INTERNAL_SERVER)
-                    .build();
+
+            case "WebExchangeBindException":
+                List<ApiSubError> subErrorList2 = new ArrayList<>();
+                List<FieldError> errors = ((WebExchangeBindException) error).getBindingResult().getFieldErrors();
+
+                for (FieldError fieldError : errors) {
+                    ApiSubError subError = new ApiValidationError(
+                            null,
+                            null,
+                            fieldError.getCode(),
+                            initializeMessage(fieldError.getDefaultMessage(), LOCALE_EN),
+                            initializeMessage(fieldError.getDefaultMessage(), LOCALE_FA)
+                    );
+                    subErrorList2.add(subError);
+                }
+                apiError = ApiError.builder()
+                        .status(HttpStatus.BAD_REQUEST)
+                        .message(initializeMessage(ERROR_METHOD_ARGUMENT_NOT_VALID, LOCALE_EN))
+                        .localizedMessage(initializeMessage(ERROR_METHOD_ARGUMENT_NOT_VALID, LOCALE_FA))
+                        .code("E" + HttpStatus.BAD_REQUEST.value() + "NOTC")
+                        .subErrors(subErrorList2)
+                        .build();
+
+                break;
+
+            case "MongoNotPrimaryException":
+                apiError = ApiError.builder()
+                        .status(HttpStatus.NOT_ACCEPTABLE)
+                        .message(initializeMessage(ERROR_GENERAL_DB_EXCEPTION, LOCALE_EN))
+                        .localizedMessage(initializeMessage(ERROR_GENERAL_DB_EXCEPTION, LOCALE_FA))
+                        .code("E" + HttpStatus.NOT_ACCEPTABLE.value() + "NOTC")
+                        .build();
+
+                break;
+
+
+            default:
+                apiError = ApiError.builder()
+                        .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                        .message(initializeMessage(ERROR_INTERNAL_SERVER, LOCALE_EN))
+                        .localizedMessage(initializeMessage(ERROR_INTERNAL_SERVER, LOCALE_FA))
+                        .code(ERROR_INTERNAL_SERVER)
+                        .build();
         }
-
 
         return ServerResponse
                 .status(apiError.getStatus())

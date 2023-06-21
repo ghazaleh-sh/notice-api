@@ -57,6 +57,14 @@
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
+
+        <!--############################ (jalali calendar) ############################-->
+        <dependency>
+            <groupId>joda-time</groupId>
+            <artifactId>joda-time</artifactId>
+            <version>2.11.2</version>
+        </dependency>
+
         <dependency>
             <groupId>com.hazelcast</groupId>
             <artifactId>hazelcast-all</artifactId>
@@ -120,15 +128,15 @@
             <scope>test</scope>
         </dependency>
         <!-- sink connector to read data off a Kafka topic and write to a MongoDB collection -->
-        <dependency>
-            <groupId>org.apache.kafka</groupId>
-            <artifactId>connect-api</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.mongodb.kafka</groupId>
-            <artifactId>mongo-kafka-connect</artifactId>
-            <version>1.9.0</version>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>org.apache.kafka</groupId>-->
+<!--            <artifactId>connect-api</artifactId>-->
+<!--        </dependency>-->
+<!--        <dependency>-->
+<!--            <groupId>org.mongodb.kafka</groupId>-->
+<!--            <artifactId>mongo-kafka-connect</artifactId>-->
+<!--            <version>1.9.0</version>-->
+<!--        </dependency>-->
 <!--        &lt;!&ndash; for mongodb client &ndash;&gt;-->
 <!--        <dependency>-->
 <!--            <groupId>org.mongodb</groupId>-->

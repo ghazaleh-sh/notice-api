@@ -1,7 +1,7 @@
 package ir.co.sadad.noticeapi.dtos.serializes;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import ir.co.sadad.noticeapi.dtos.SendSingleNoticeReqDto;
+import ir.co.sadad.noticeapi.dtos.TransactionNoticeReqDto;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.common.errors.SerializationException;
 import org.apache.kafka.common.serialization.Serializer;
@@ -13,7 +13,7 @@ import java.util.Map;
  */
 
 @Slf4j
-public class CustomSerializer implements Serializer<SendSingleNoticeReqDto> {
+public class CustomSerializer implements Serializer<TransactionNoticeReqDto> {
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Override
@@ -21,7 +21,7 @@ public class CustomSerializer implements Serializer<SendSingleNoticeReqDto> {
     }
 
     @Override
-    public byte[] serialize(String topic, SendSingleNoticeReqDto DTOdata) {
+    public byte[] serialize(String topic, TransactionNoticeReqDto DTOdata) {
         try {
             if (DTOdata == null){
                 System.out.println("Null received at serializing");

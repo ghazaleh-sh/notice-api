@@ -1,6 +1,6 @@
 package ir.co.sadad.noticeapi.services;
 
-import ir.co.sadad.noticeapi.dtos.SendSingleNoticeReqDto;
+import ir.co.sadad.noticeapi.dtos.TransactionNoticeReqDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.producer.RecordMetadata;
@@ -14,7 +14,6 @@ import org.springframework.stereotype.Service;
  * <ol>
  *   <li> Start Zookeeper and Kafka server
  *   <li> Create Kafka topic
- *   <li> Run {@link SampleProducer} as Java application with all dependent jars in the CLASSPATH (eg. from IDE).
  *   <li> Shutdown Kafka server and Zookeeper when no longer required
  * </ol>
  *
@@ -26,8 +25,8 @@ import org.springframework.stereotype.Service;
 @Service
 public class ReactiveProducerService {
 
-    private final ReactiveKafkaProducerTemplate<String, SendSingleNoticeReqDto> reactiveKafkaProducerTemplate;
-    private final ReactiveConsumerService consumerService;
+    private final ReactiveKafkaProducerTemplate<String, TransactionNoticeReqDto> reactiveKafkaProducerTemplate;
+//    private final ReactiveConsumerService consumerService;
 
     @Value(value = "${spring.kafka.producer.topic}")
     private String topic;
@@ -35,13 +34,13 @@ public class ReactiveProducerService {
     /**
      * Subscribe to trigger the actual flow of records from outbound message to Kafka.
      */
-    public void send(SendSingleNoticeReqDto singleNoticeReqDto) {
-        log.info("send to topic={}, {}={},", topic, SendSingleNoticeReqDto.class.getSimpleName(), singleNoticeReqDto);
+    public void send(TransactionNoticeReqDto singleNoticeReqDto) {
+        log.info("send to topic={}, {}={},", topic, TransactionNoticeReqDto.class.getSimpleName(), singleNoticeReqDto);
         reactiveKafkaProducerTemplate.send(topic, singleNoticeReqDto)
                 .doOnError(e -> log.error("Send failed", e))
 //                .doOnSuccess(senderResult -> log.info("sent {} offset : {}", fakeProducerDTO, senderResult.recordMetadata().offset()))
 //                .subscribe();
-                .doOnSuccess((r) -> consumerService.consumeNotificationDTO().subscribe())
+//                .doOnSuccess((r) -> consumerService.consumeNotificationDTO().subscribe())
                 .subscribe(senderResult -> {
                     log.info("sent {} offset : {}", singleNoticeReqDto, senderResult.recordMetadata().offset());
                     RecordMetadata metadata = senderResult.recordMetadata();

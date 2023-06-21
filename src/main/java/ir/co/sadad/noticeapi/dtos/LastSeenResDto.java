@@ -7,9 +7,6 @@ import lombok.Data;
 @Data
 public class LastSeenResDto {
 
-    @Schema(title = "کد ملی")
-    private String ssn;
-
     @Schema(title = "تاریخ ایجاد مربوط به آخرین پیام دیده شده کمپین توسط کاربر")
     private Long lastSeenCampaign;
 

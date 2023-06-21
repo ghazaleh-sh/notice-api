@@ -1,7 +1,9 @@
 package ir.co.sadad.noticeapi.configs;
 
-import ir.co.sadad.noticeapi.dtos.SendSingleNoticeReqDto;
+import ir.co.sadad.noticeapi.dtos.TransactionNoticeReqDto;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.kafka.clients.producer.ProducerConfig;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.kafka.KafkaProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -20,10 +22,14 @@ import java.util.Map;
 @Configuration
 public class ReactiveKafkaProducerConfig {
 
+    @Value("${spring.kafka.bootstrap-servers}")
+    private String bootstrapServers;
+
     @Bean
-    public ReactiveKafkaProducerTemplate<String, SendSingleNoticeReqDto> reactiveKafkaProducerTemplate(
+    public ReactiveKafkaProducerTemplate<String, TransactionNoticeReqDto> reactiveKafkaProducerTemplate(
             KafkaProperties properties) {
         Map<String, Object> props = properties.buildProducerProperties();
+        props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
         return new ReactiveKafkaProducerTemplate<>(SenderOptions.create(props));
     }
 

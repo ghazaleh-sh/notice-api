@@ -13,11 +13,6 @@ import java.util.List;
 public class SendCampaignNoticeReqDto implements Serializable {
     private static final long serialVersionUID = 1678659015284581484L;
 
-    /*
-    if ssn is null, send for all
-     */
-    private List<String> ssn;
-
     @Schema(title = "عنوان اعلان")
     @NotNull(message = "title.is.required")
     private String title;
@@ -26,7 +21,7 @@ public class SendCampaignNoticeReqDto implements Serializable {
     @NotNull(message = "description.is.required")
     private String description;
 
-    @Schema(title = "تاریخ اعلان-epoch")
-    @NotNull(message = "date.is.required")
-    private Long date;
+//    @Schema(title = "تاریخ اعلان-epoch")
+//    @NotNull(message = "date.is.required")
+//    private Long date;
 }
