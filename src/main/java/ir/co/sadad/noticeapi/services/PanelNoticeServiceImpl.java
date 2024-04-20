@@ -1,5 +1,6 @@
 package ir.co.sadad.noticeapi.services;
 
+import ir.co.sadad.noticeapi.dtos.ListOfCampaignResDto;
 import ir.co.sadad.noticeapi.dtos.UpdateCampaignNoticeDto;
 import ir.co.sadad.noticeapi.exceptions.GeneralException;
 import ir.co.sadad.noticeapi.models.Notification;
@@ -9,6 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
+
 
 @Slf4j
 @RequiredArgsConstructor
@@ -31,8 +33,8 @@ public class PanelNoticeServiceImpl implements PanelNoticeService {
     }
 
     @Override
-    public Mono<Void> deleteCampaignMessage(Long notificationId) {
-        return notificationRepository.findByCreationDate(notificationId)
+    public Mono<Void> deleteCampaignMessage(Long creationDate) {
+        return notificationRepository.findByCreationDate(creationDate)
                 .switchIfEmpty(Mono.error(new GeneralException("notification.not.find", HttpStatus.NOT_FOUND)))
                 .flatMap(notification -> notificationRepository.deleteById(notification.getId()))
                 .onErrorResume(e -> {
@@ -40,10 +42,22 @@ public class PanelNoticeServiceImpl implements PanelNoticeService {
                     e.printStackTrace();
                     return Mono.error(e);
                 })
-                .doOnSuccess(v -> {
-                    log.info("Record deleted successfully");
-                })
+                .doOnSuccess(v -> log.info("Record deleted successfully"))
                 .then();
 
     }
+
+    @Override
+    public Mono<ListOfCampaignResDto> campaignList() {
+        ListOfCampaignResDto res = new ListOfCampaignResDto();
+
+        return notificationRepository.findAll()
+                .sort((o1, o2) -> (int) (o2.getCreationDate() - o1.getCreationDate()))
+                .collectList()
+                .flatMap(notifications -> {
+                    res.setNotifications(notifications);
+                    return Mono.just(res);
+                });
+    }
+
 }

@@ -24,16 +24,4 @@ public class OpenApiConfig {
                         "This is a documentation of notice-api with OpenAPI 3."));
     }
 
-//    public OpenApiCustomiser getOpenApiCustomiser() {
-//
-//        return openAPI -> openAPI.getPaths().values().stream().flatMap(pathItem ->
-//                pathItem.readOperations().stream())
-//                .forEach(operation -> {
-//                    operation.addParametersItem(new Parameter().name("Authorization").in("header").
-//                            schema(new StringSchema().example("token")).required(true));
-//                    operation.addParametersItem(new Parameter().name("ssn").in("header").
-//                            schema(new StringSchema().example("test")).required(true));
-//
-//                });
-//    }
 }

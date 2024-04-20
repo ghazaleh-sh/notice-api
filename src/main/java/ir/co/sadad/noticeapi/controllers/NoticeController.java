@@ -32,7 +32,7 @@ public class NoticeController {
 
     private final ReactiveProducerService producerService;
 
-    private final NoticeMidnightJobSservice jobSservice;
+    private final NoticeMidnightJobSservice jobService;
 
     private final NoticeService noticeService;
 
@@ -44,33 +44,8 @@ public class NoticeController {
     public ResponseEntity<Void> sendTransactionToKafka(@RequestHeader(name = HttpHeaders.AUTHORIZATION) String authToken,
                                                        @RequestBody @Valid TransactionNoticeReqDto transactionNoticeReqDto) {
         producerService.send(transactionNoticeReqDto);
-//        consumerService.run();
         return new ResponseEntity<>(HttpStatus.OK);
-//                .map(r -> ResponseEntity.ok().<Void>build())
-//                .defaultIfEmpty(ResponseEntity.notFound().build());
-//    }
 
-    }
-
-//    @GetMapping(value = "/kafka/consume")
-//    public ResponseEntity<Void> consumeData() {
-//        consumerService.consumeNotificationDTO().subscribe();
-//        return new ResponseEntity<>(HttpStatus.OK);
-////                .map(r -> ResponseEntity.ok().<Void>build())
-////                .defaultIfEmpty(ResponseEntity.notFound().build());
-////    }
-//
-//    }
-
-
-    @Operation(summary = "سرویس ارسال پیام کمپین",
-            description = "این سرویس لیست کدهای ملی را به صورت فایل گرفته و پیام کمپین را برای آنها ذخیره مینماید.")
-    @ApiResponse(responseCode = "200", content = @Content(schema = @Schema(implementation = SendCampaignNoticeResDto.class)))
-    @PostMapping(value = "/campaign", consumes = {MediaType.MULTIPART_FORM_DATA_VALUE})
-    public Mono<ResponseEntity<SendCampaignNoticeResDto>> sendCampaign(@RequestHeader(name = HttpHeaders.AUTHORIZATION) String authToken,
-                                                                       @RequestPart("message") @Valid SendCampaignNoticeReqDto campaignNoticeReqDto,
-                                                                       @RequestPart("file") FilePart filePart) {
-        return noticeService.sendCampaignNotice(campaignNoticeReqDto, filePart).map((res -> ResponseEntity.ok().body(res)));
     }
 
     @Operation(summary = "سرویس لیست پیام های کاربر",
@@ -128,16 +103,29 @@ public class NoticeController {
 
     @PostMapping(value = "/delete-job")
     public void resetCountJob() {
-        jobSservice.resetNoticeCountJob();
+        jobService.resetNoticeCountJob();
         new ResponseEntity<>(HttpStatus.OK);
     }
 
     /*--------------------panel Rest api--------------------*/
 
+
+    @Operation(summary = "سرویس ارسال پیام کمپین",
+            description = "این سرویس لیست کدهای ملی را به صورت فایل گرفته و پیام کمپین را برای آنها ذخیره مینماید.")
+    @ApiResponse(responseCode = "200", content = @Content(schema = @Schema(implementation = SendCampaignNoticeResDto.class)))
+    @PostMapping(value = "/campaign", consumes = {MediaType.MULTIPART_FORM_DATA_VALUE})
+    public Mono<ResponseEntity<SendCampaignNoticeResDto>> sendCampaign(@RequestHeader(name = HttpHeaders.AUTHORIZATION) String authToken,
+                                                                       @RequestHeader(SSN) String ssn,
+                                                                       @RequestPart("message") @Valid SendCampaignNoticeReqDto campaignNoticeReqDto,
+                                                                       @RequestPart("file") FilePart filePart) {
+        return noticeService.sendCampaignNotice(campaignNoticeReqDto, filePart).map((res -> ResponseEntity.ok().body(res)));
+    }
+
+
     @Operation(summary = "سرویس بروز رسانی پیام کمپین")
     @ResponseStatus(value = HttpStatus.NO_CONTENT)
     @PutMapping(value = "/update")
-    public Mono<ResponseEntity<Void>> updateCampaignNotification(//@RequestHeader(name = HttpHeaders.AUTHORIZATION) String authToken,
+    public Mono<ResponseEntity<Void>> updateCampaignNotification(@RequestHeader (name = HttpHeaders.AUTHORIZATION) String authToken,
                                                                  @RequestBody UpdateCampaignNoticeDto campaignNoticeDto) {
         return panelNoticeService.updateCampaignMessage(campaignNoticeDto)
                 .map(notification -> ResponseEntity.noContent().build());
@@ -145,10 +133,16 @@ public class NoticeController {
 
     @Operation(summary = "سرویس حذف پیام کمپین")
     @ResponseStatus(value = HttpStatus.NO_CONTENT)
-    @DeleteMapping(value = "/delete-message/{notificationId}")
-    public Mono<ResponseEntity<Void>> deleteCampaignNotification(//@RequestHeader(name = HttpHeaders.AUTHORIZATION) String authToken,
-                                           @PathVariable("notificationId") Long notificationId) {
-        return panelNoticeService.deleteCampaignMessage(notificationId)
+    @DeleteMapping(value = "/delete-message/{creationDate}")
+    public Mono<ResponseEntity<Void>> deleteCampaignNotification(@RequestHeader (name = HttpHeaders.AUTHORIZATION) String authToken,
+                                           @PathVariable("creationDate") Long creationDate) {
+        return panelNoticeService.deleteCampaignMessage(creationDate)
                 .map(notification -> ResponseEntity.noContent().build());
+    }
+
+    @Operation(summary = "سرویس لیست پیام های کمپین")
+    @GetMapping(value = "/list")
+    public Mono<ResponseEntity<ListOfCampaignResDto>> getCampaignList(@RequestHeader (name = HttpHeaders.AUTHORIZATION) String authToken) {
+        return panelNoticeService.campaignList().map((res -> ResponseEntity.ok().body(res)));
     }
 }

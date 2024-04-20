@@ -1,10 +1,12 @@
 package ir.co.sadad.noticeapi.models;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import ir.co.sadad.noticeapi.enums.Platform;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.data.annotation.CreatedBy;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
@@ -24,7 +26,7 @@ public class Notification implements Serializable {
     private String id;
 
     /**
-     * date of notice release- used for transactions
+     * date of notice release - used for transactions
      */
 //    @NotNull(message = "date.must.not.be.null")
     private String date;
@@ -52,27 +54,38 @@ public class Notification implements Serializable {
     private String type;
 
     /**
-     * balance of notice- for under 30 T transactions
+     * balance of notice-for under 30 T transactions
      */
     private String balance;
 
     /**
-     * account of notice- for under 30 T transactions
+     * account of notice-for under 30 T transactions
      */
     private String account;
 
     /**
-     * withdraw of notice- for under 30 T transactions
+     * withdraw of notice-for under 30 T transactions
      */
     private String withdraw;
 
     /**
-     * bankName of notice- for under 30 T transactions
+     * bankName of notice-for under 30 T transactions
      */
     private String bankName;
 
     /**
-     * transaction type- for under 30 T transactions
+     * transaction type-for under 30 T transactions
      */
     private String transactionType;
+
+    /**
+     * channels for separating messages
+     */
+    private Platform platform;
+
+    /**
+     * message creator - ssn
+     */
+    @CreatedBy
+    private String createdBy;
 }
