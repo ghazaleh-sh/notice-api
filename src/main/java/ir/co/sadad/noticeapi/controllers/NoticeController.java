@@ -24,6 +24,7 @@ import reactor.core.publisher.Mono;
 import javax.validation.Valid;
 
 import static ir.co.sadad.noticeapi.configs.Constants.SSN;
+import static ir.co.sadad.noticeapi.configs.Constants.USER_AGENT;
 
 @RestController
 @RequestMapping(path = "${v1API}/message")
@@ -57,9 +58,10 @@ public class NoticeController {
     @GetMapping(value = "/notifications")
     public Mono<ResponseEntity<UserNoticeListResDto>> getNotifications(@RequestHeader(name = HttpHeaders.AUTHORIZATION) String authToken,
                                                                        @RequestHeader(SSN) @Parameter(hidden = true) String ssn,
+                                                                       @RequestHeader(USER_AGENT) String userAgent,
                                                                        @RequestParam(value = "page") int page,
                                                                        @RequestParam(value = "notificationType") String notificationType) {
-        return noticeService.userNoticeList(ssn, notificationType, page).map((res -> ResponseEntity.ok().body(res)));
+        return noticeService.userNoticeList(ssn, notificationType, page, userAgent).map((res -> ResponseEntity.ok().body(res)));
     }
 
     @Operation(summary = "سرویس دریافت آخرین پیام مشاهده شده",
@@ -118,6 +120,7 @@ public class NoticeController {
                                                                        @RequestHeader(SSN) String ssn,
                                                                        @RequestPart("message") @Valid SendCampaignNoticeReqDto campaignNoticeReqDto,
                                                                        @RequestPart("file") FilePart filePart) {
+        campaignNoticeReqDto.setSsn(ssn);
         return noticeService.sendCampaignNotice(campaignNoticeReqDto, filePart).map((res -> ResponseEntity.ok().body(res)));
     }
 
@@ -125,24 +128,44 @@ public class NoticeController {
     @Operation(summary = "سرویس بروز رسانی پیام کمپین")
     @ResponseStatus(value = HttpStatus.NO_CONTENT)
     @PutMapping(value = "/update")
-    public Mono<ResponseEntity<Void>> updateCampaignNotification(@RequestHeader (name = HttpHeaders.AUTHORIZATION) String authToken,
+    public Mono<ResponseEntity<Void>> updateCampaignNotification(@RequestHeader(name = HttpHeaders.AUTHORIZATION) String authToken,
+                                                                 @RequestHeader(SSN) String ssn,
                                                                  @RequestBody UpdateCampaignNoticeDto campaignNoticeDto) {
-        return panelNoticeService.updateCampaignMessage(campaignNoticeDto)
+        return panelNoticeService.updateCampaignMessage(campaignNoticeDto, ssn)
                 .map(notification -> ResponseEntity.noContent().build());
     }
 
     @Operation(summary = "سرویس حذف پیام کمپین")
     @ResponseStatus(value = HttpStatus.NO_CONTENT)
     @DeleteMapping(value = "/delete-message/{creationDate}")
-    public Mono<ResponseEntity<Void>> deleteCampaignNotification(@RequestHeader (name = HttpHeaders.AUTHORIZATION) String authToken,
-                                           @PathVariable("creationDate") Long creationDate) {
+    public Mono<ResponseEntity<Void>> deleteCampaignNotification(@RequestHeader(name = HttpHeaders.AUTHORIZATION) String authToken,
+                                                                 @PathVariable("creationDate") Long creationDate) {
         return panelNoticeService.deleteCampaignMessage(creationDate)
                 .map(notification -> ResponseEntity.noContent().build());
     }
 
     @Operation(summary = "سرویس لیست پیام های کمپین")
     @GetMapping(value = "/list")
-    public Mono<ResponseEntity<ListOfCampaignResDto>> getCampaignList(@RequestHeader (name = HttpHeaders.AUTHORIZATION) String authToken) {
-        return panelNoticeService.campaignList().map((res -> ResponseEntity.ok().body(res)));
+    public Mono<ResponseEntity<ListOfCampaignResDto>> getCampaignList(@RequestHeader(name = HttpHeaders.AUTHORIZATION) String authToken,
+                                                                      @RequestParam("pageNumber") String pageNumber,
+                                                                      @RequestParam("pageSize") String pageSize,
+                                                                      @RequestParam(name = "platform", required = false) String platform,
+                                                                      @RequestParam(name = "title", required = false) String title,
+                                                                      @RequestParam(name = "type", required = false) String type,
+                                                                      @RequestParam(name = "date_gt", required = false) String dateFrom,
+                                                                      @RequestParam(name = "date_lt", required = false) String dateTo,
+                                                                      @RequestParam(name = "sort", required = false) String sort,
+                                                                      @RequestParam(name = "sortBy", required = false) String sortBy) {
+        PanelNoticeListReqDto reqList = PanelNoticeListReqDto.builder()
+                .pageNumber(Integer.parseInt(pageNumber))
+                .pageSize(Integer.parseInt(pageSize))
+                .platform(platform)
+                .title(title)
+                .type(type)
+                .dateFrom(dateFrom)
+                .dateTo(dateTo)
+                .sortBy(sortBy)
+                .sort(sort).build();
+        return panelNoticeService.campaignList(reqList).map((res -> ResponseEntity.ok().body(res)));
     }
 }

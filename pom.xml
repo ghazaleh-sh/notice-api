@@ -10,7 +10,7 @@
     </parent>
     <groupId>ir.co.sadad</groupId>
     <artifactId>notice-api</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <version>1.0.6-SNAPSHOT</version>
     <name>notice-api</name>
     <description>notices for mobile application</description>
     <properties>

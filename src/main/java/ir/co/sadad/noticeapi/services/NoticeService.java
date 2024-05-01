@@ -16,7 +16,7 @@ public interface NoticeService {
 
     Mono<SendCampaignNoticeResDto> sendCampaignNotice(SendCampaignNoticeReqDto campaignNoticeReqDto, FilePart file);
 
-    Mono<UserNoticeListResDto> userNoticeList(String ssn, String type, int page);
+    Mono<UserNoticeListResDto> userNoticeList(String ssn, String type, int page, String userAgent);
 
     Mono<LastSeenResDto> UserLastSeenId(String ssn, Long lastSeenCampaign, Long lastSeenTransaction);
 

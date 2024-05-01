@@ -7,7 +7,9 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.CreatedBy;
+import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.LastModifiedBy;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import javax.validation.constraints.NotNull;
@@ -83,9 +85,17 @@ public class Notification implements Serializable {
      */
     private Platform platform;
 
+    private String creationDateUTC;
+
     /**
      * message creator - ssn
      */
     @CreatedBy
     private String createdBy;
+
+    /**
+     * message modifier through update panel service - ssn
+     */
+    @LastModifiedBy
+    private String modifiedBy;
 }

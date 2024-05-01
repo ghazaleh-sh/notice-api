@@ -1,6 +1,7 @@
 package ir.co.sadad.noticeapi.services;
 
 import ir.co.sadad.noticeapi.dtos.ListOfCampaignResDto;
+import ir.co.sadad.noticeapi.dtos.PanelNoticeListReqDto;
 import ir.co.sadad.noticeapi.dtos.UpdateCampaignNoticeDto;
 import ir.co.sadad.noticeapi.models.Notification;
 import reactor.core.publisher.Flux;
@@ -14,10 +15,10 @@ import reactor.core.publisher.Mono;
  */
 public interface PanelNoticeService {
 
-    Mono<Notification> updateCampaignMessage(UpdateCampaignNoticeDto updateCampaignDto);
+    Mono<Notification> updateCampaignMessage(UpdateCampaignNoticeDto updateCampaignDto, String ssn);
 
     Mono<Void> deleteCampaignMessage(Long notificationId);
 
-    Mono<ListOfCampaignResDto> campaignList();
+    Mono<ListOfCampaignResDto> campaignList(PanelNoticeListReqDto reqList);
 
 }

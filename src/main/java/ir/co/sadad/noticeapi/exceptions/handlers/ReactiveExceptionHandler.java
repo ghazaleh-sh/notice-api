@@ -1,8 +1,6 @@
 package ir.co.sadad.noticeapi.exceptions.handlers;
 
 import ir.co.sadad.noticeapi.exceptions.BaseException;
-import ir.co.sadad.noticeapi.exceptions.GeneralException;
-import ir.co.sadad.noticeapi.exceptions.ValidationException;
 import ir.co.sadad.noticeapi.exceptions.model.ApiError;
 import ir.co.sadad.noticeapi.exceptions.model.ApiSubError;
 import ir.co.sadad.noticeapi.exceptions.model.ApiValidationError;
@@ -15,14 +13,15 @@ import org.springframework.context.MessageSource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.support.WebExchangeBindException;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.server.*;
-import org.springframework.web.server.ServerWebInputException;
 import reactor.core.publisher.Mono;
 
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 @Slf4j
@@ -41,6 +40,9 @@ public class ReactiveExceptionHandler extends AbstractErrorWebExceptionHandler {
     protected static final Locale LOCALE_FA = new Locale("fa");
 
     private final MessageSource messageSource;
+
+    private static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
+    String timestamp = formatter.format(Instant.now().atZone(ZoneId.of("UTC")));
 
 
     public ReactiveExceptionHandler(ErrorAttributes errorAttributes,
@@ -64,26 +66,22 @@ public class ReactiveExceptionHandler extends AbstractErrorWebExceptionHandler {
         ApiError apiError;
 
         switch (error.getClass().getSimpleName()) {
-            case "GeneralException":
+            case "GeneralException" -> {
                 BaseException ex = (BaseException) error;
                 apiError = ApiError.builder()
                         .status(ex.getHttpStatusCode())
+                        .timestamp(timestamp)
                         .message(initializeMessage(ex.getCode(), LOCALE_EN))
                         .localizedMessage(initializeMessage(ex.getCode(), LOCALE_FA))
-                        .code(ex.getCode())
+                        .code("NOTC" + ex.getHttpStatusCode().value())
                         .extraData(ex.getExtraData())
                         .build();
-                break;
-
-
-            case "ValidationException":
+            }
+            case "ValidationException" -> {
                 BaseException ex2 = (BaseException) error;
                 List<ApiSubError> subErrorList = new ArrayList<>();
-
                 if (ex2.getMessage() != null) {
                     ApiSubError subError = new ApiValidationError(
-                            null,
-                            null,
                             "E" + HttpStatus.BAD_REQUEST.value() + "NOTC",
                             initializeMessage(ex2.getMessage(), LOCALE_EN),
                             initializeMessage(ex2.getMessage().substring(ex2.getMessage().indexOf(":") + 1).trim(), LOCALE_FA)
@@ -92,34 +90,26 @@ public class ReactiveExceptionHandler extends AbstractErrorWebExceptionHandler {
                 }
                 apiError = ApiError.builder()
                         .status(ex2.getHttpStatusCode())
+                        .timestamp(timestamp)
                         .message(initializeMessage(ex2.getCode(), LOCALE_EN))
                         .localizedMessage(initializeMessage(ex2.getCode(), LOCALE_FA))
-                        .code(ex2.getCode())
+                        .code("NOTC" + ex2.getHttpStatusCode().value())
                         .extraData(ex2.getExtraData())
                         .subErrors(subErrorList)
                         .build();
-                break;
-
-
-            case "ServerWebInputException":
-                apiError = ApiError.builder()
-                        .status(HttpStatus.BAD_REQUEST)
-                        .message(initializeMessage("PPA.general.validator.EBP40000001", LOCALE_EN))
-                        .localizedMessage(initializeMessage("PPA.general.validator.EBP40000001", LOCALE_FA))
-                        .code("E" + HttpStatus.BAD_REQUEST.value() + "NOTC")
-                        .build();
-
-                break;
-
-
-            case "WebExchangeBindException":
+            }
+            case "ServerWebInputException" -> apiError = ApiError.builder()
+                    .status(HttpStatus.BAD_REQUEST)
+                    .timestamp(timestamp)
+                    .message(initializeMessage(ERROR_CONSTRAINT_VIOLATION, LOCALE_EN))
+                    .localizedMessage(initializeMessage(ERROR_CONSTRAINT_VIOLATION, LOCALE_FA))
+                    .code("NOTC" + HttpStatus.BAD_REQUEST.value())
+                    .build();
+            case "WebExchangeBindException" -> {
                 List<ApiSubError> subErrorList2 = new ArrayList<>();
                 List<FieldError> errors = ((WebExchangeBindException) error).getBindingResult().getFieldErrors();
-
                 for (FieldError fieldError : errors) {
                     ApiSubError subError = new ApiValidationError(
-                            null,
-                            null,
                             fieldError.getCode(),
                             initializeMessage(fieldError.getDefaultMessage(), LOCALE_EN),
                             initializeMessage(fieldError.getDefaultMessage(), LOCALE_FA)
@@ -128,32 +118,27 @@ public class ReactiveExceptionHandler extends AbstractErrorWebExceptionHandler {
                 }
                 apiError = ApiError.builder()
                         .status(HttpStatus.BAD_REQUEST)
+                        .timestamp(timestamp)
                         .message(initializeMessage(ERROR_METHOD_ARGUMENT_NOT_VALID, LOCALE_EN))
                         .localizedMessage(initializeMessage(ERROR_METHOD_ARGUMENT_NOT_VALID, LOCALE_FA))
-                        .code("E" + HttpStatus.BAD_REQUEST.value() + "NOTC")
+                        .code("NOTC" + HttpStatus.BAD_REQUEST.value())
                         .subErrors(subErrorList2)
                         .build();
-
-                break;
-
-            case "MongoNotPrimaryException":
-                apiError = ApiError.builder()
-                        .status(HttpStatus.NOT_ACCEPTABLE)
-                        .message(initializeMessage(ERROR_GENERAL_DB_EXCEPTION, LOCALE_EN))
-                        .localizedMessage(initializeMessage(ERROR_GENERAL_DB_EXCEPTION, LOCALE_FA))
-                        .code("E" + HttpStatus.NOT_ACCEPTABLE.value() + "NOTC")
-                        .build();
-
-                break;
-
-
-            default:
-                apiError = ApiError.builder()
-                        .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                        .message(initializeMessage(ERROR_INTERNAL_SERVER, LOCALE_EN))
-                        .localizedMessage(initializeMessage(ERROR_INTERNAL_SERVER, LOCALE_FA))
-                        .code(ERROR_INTERNAL_SERVER)
-                        .build();
+            }
+            case "MongoNotPrimaryException" -> apiError = ApiError.builder()
+                    .status(HttpStatus.NOT_ACCEPTABLE)
+                    .timestamp(timestamp)
+                    .code("NOTC" + HttpStatus.NOT_ACCEPTABLE.value())
+                    .message(initializeMessage(ERROR_GENERAL_DB_EXCEPTION, LOCALE_EN))
+                    .localizedMessage(initializeMessage(ERROR_GENERAL_DB_EXCEPTION, LOCALE_FA))
+                    .build();
+            default -> apiError = ApiError.builder()
+                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .timestamp(timestamp)
+                    .code("NOTC" + HttpStatus.INTERNAL_SERVER_ERROR.value())
+                    .message(initializeMessage(ERROR_INTERNAL_SERVER, LOCALE_EN))
+                    .localizedMessage(initializeMessage(ERROR_INTERNAL_SERVER, LOCALE_FA))
+                    .build();
         }
 
         return ServerResponse

@@ -9,7 +9,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.validation.FieldError;
 
 import javax.validation.ConstraintViolation;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * main body of exception
@@ -26,7 +29,7 @@ public class ApiError {
     /**
      * when error occurred
      */
-    private final Long timestamp;
+    private final String timestamp;
 
     /**
      * code of exception
@@ -76,14 +79,11 @@ public class ApiError {
         subErrors.add(subError);
     }
 
-    public void addValidationError(String field, String object,
-                                   String code, String message, String localizedMessage) {
+    public void addValidationError(String code, String message, String localizedMessage) {
         addSubError(ApiValidationError.builder()
-                .field(field)
                 .localizedMessage(localizedMessage)
                 .message(message)
                 .code(code)
-                .object(object)
                 .build());
     }
 
@@ -93,14 +93,13 @@ public class ApiError {
      * @param cv the ConstraintViolation
      */
     private void addValidationError(ConstraintViolation<?> cv) {
-        this.addValidationError(null, cv.getRootBeanClass().getSimpleName(),
-                ((PathImpl) cv.getPropertyPath()).getLeafNode().asString(),
+        this.addValidationError(((PathImpl) cv.getPropertyPath()).getLeafNode().asString(),
                 cv.getInvalidValue() == null ? "" : cv.getInvalidValue().toString(),
                 cv.getMessage());
     }
 
     public void addValidationError(FieldError fieldError) {
-        this.addValidationError("", fieldError.getObjectName(), fieldError.getField(),
+        this.addValidationError(fieldError.getField(),
                 fieldError.getRejectedValue() == null ? ""
                         : fieldError.getRejectedValue().toString(),
                 fieldError.getDefaultMessage());

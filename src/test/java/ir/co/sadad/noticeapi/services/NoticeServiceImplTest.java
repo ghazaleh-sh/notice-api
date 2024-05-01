@@ -8,7 +8,6 @@ import ir.co.sadad.noticeapi.models.Notification;
 import ir.co.sadad.noticeapi.models.UserNotification;
 import ir.co.sadad.noticeapi.repositories.NotificationRepository;
 import ir.co.sadad.noticeapi.repositories.UserNotificationRepository;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -37,7 +36,7 @@ class NoticeServiceImplTest {
     private UserNotification createUserNotification() {
         UserNotification userNotification = new UserNotification("1", SSN, null, null, 12345L, 12346L, 0, 2);
         userNotification.setNotificationTransactions(Arrays.asList(
-                new Notification("1", "1105-14:00", 12346L, null, null, "transaction", "5000", "34567677", "1000", "lgd", "moneyTransfer")
+                new Notification("1", "1105-14:00", 12346L, null, null, "transaction", "5000", "34567677", "1000", "lgd", "moneyTransfer", null,null, null, null)
         ));
 
         return userNotification;
@@ -50,8 +49,8 @@ class NoticeServiceImplTest {
     @Test
     void shouldReturnUserNotificationListForGivenSSNAndTypeAndPage() {
 
-        Notification noticCamp = new Notification("2", null, 23456L, "reminder", "descriptionnnn", "campaign", null, null, null, null,null);
-        Notification noticCamp3 = new Notification("3", null, 76767L, "reminder2", "descriptionnnn2", "campaign", null, null, null, null,null);
+        Notification noticCamp = new Notification("2", null, 23456L, "reminder", "descriptionnnn", "campaign", null, null, null, null,null, null, null, null, null);
+        Notification noticCamp3 = new Notification("3", null, 76767L, "reminder2", "descriptionnnn2", "campaign", null, null, null, null,null, null,null, null, null);
         when(notificationRepository.findByCreationDate(23456L)).thenReturn(Mono.just(noticCamp));
         when(notificationRepository.findByCreationDate(76767L)).thenReturn(Mono.just(noticCamp3));
 
@@ -63,7 +62,7 @@ class NoticeServiceImplTest {
 
         // when
         NoticeService noticeService = new NoticeServiceImpl(notificationRepository, userNotificationRepository);
-        Mono<UserNoticeListResDto> userNoticeListResDtoMono = noticeService.userNoticeList(SSN, TYPE, PAGE);
+        Mono<UserNoticeListResDto> userNoticeListResDtoMono = noticeService.userNoticeList(SSN, TYPE, PAGE, null);
 
         // then
         StepVerifier.create(userNoticeListResDtoMono)

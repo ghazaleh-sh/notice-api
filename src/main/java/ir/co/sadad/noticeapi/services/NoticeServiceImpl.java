@@ -2,12 +2,14 @@ package ir.co.sadad.noticeapi.services;
 
 import ir.co.sadad.noticeapi.dtos.*;
 import ir.co.sadad.noticeapi.enums.NoticeType;
+import ir.co.sadad.noticeapi.enums.Platform;
 import ir.co.sadad.noticeapi.exceptions.GeneralException;
 import ir.co.sadad.noticeapi.exceptions.ValidationException;
 import ir.co.sadad.noticeapi.models.Notification;
 import ir.co.sadad.noticeapi.models.UserNotification;
 import ir.co.sadad.noticeapi.repositories.NotificationRepository;
 import ir.co.sadad.noticeapi.repositories.UserNotificationRepository;
+import ir.co.sadad.noticeapi.services.utilities.Utilities;
 import ir.co.sadad.noticeapi.validations.NationalCodeValidator;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
@@ -130,6 +132,9 @@ public class NoticeServiceImpl implements NoticeService {
                         .description(camp.getDescription())
                         .title(camp.getTitle())
                         .type(NoticeType.CAMPAIGN.getValue())
+                        .platform(Platform.valueOf(camp.getPlatform()))
+                        .createdBy(camp.getSsn())
+                        .creationDateUTC(Utilities.currentUTCDate())
                         .build()))
                 .onErrorMap(throwable -> new ValidationException(throwable.getMessage(), "error.on.save.notification"));
     }
@@ -140,21 +145,22 @@ public class NoticeServiceImpl implements NoticeService {
         success.getAndIncrement();
 
         return userNotificationRepository.insert(UserNotification
-                .builder()
-                .ssn(ssn)
-                .notificationCampaignsCreateDate(notifsOfUser)
-                .lastSeenCampaign(0L)
-                .lastSeenTransaction(0L)
-                .remainNotificationCount(1)
-                .notificationCount(1)
-                .build())
+                        .builder()
+                        .ssn(ssn)
+                        .notificationCampaignsCreateDate(notifsOfUser)
+                        .lastSeenCampaign(0L)
+                        .lastSeenTransaction(0L)
+                        .remainNotificationCount(1)
+                        .notificationCount(1)
+                        .build())
                 .onErrorMap(throwable -> new GeneralException(throwable.getMessage(), "error.on.save.user.notification"));
         // just to see what is being emitted
 //                .log();
     }
 
     @Override
-    public Mono<UserNoticeListResDto> userNoticeList(String ssn, String type, int page) {
+    public Mono<UserNoticeListResDto> userNoticeList(String ssn, String type, int page, String userAgent) {
+        Platform userCurrentPlatform = Utilities.checkUserAgent(userAgent);
 
         return userNotificationRepository.findBySsn(ssn)
                 .switchIfEmpty(Mono.error(new GeneralException("ssn.not.find", HttpStatus.NOT_FOUND)))
@@ -170,10 +176,14 @@ public class NoticeServiceImpl implements NoticeService {
 
                         notificationsFlux = notificationsIdFlux
                                 //processing each notificationId in parallel
-                                .flatMapSequential(notificationId ->
-                                        notificationRepository.findByCreationDate(notificationId)
-                                                .switchIfEmpty(Mono.empty())
+                                .flatMapSequential(notificationId -> {
+                                            if (userCurrentPlatform == null)
+                                                return notificationRepository.findByCreationDate(notificationId);
+                                            else
+                                                return notificationRepository.findByCreationDateAndPlatform(notificationId, userCurrentPlatform);
+                                        }
                                 )
+                                .switchIfEmpty(Mono.empty())
                                 .filter(Objects::nonNull); // Filter out empty values
 
                     } else {
@@ -315,6 +325,9 @@ public class NoticeServiceImpl implements NoticeService {
                 .flatMap(this.userNotificationRepository::save);
 
     }
+
+
+
 
     //    @Override
 //    public Mono<Void> clearUnreadCount(String ssn) {
