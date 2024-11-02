@@ -136,40 +136,37 @@ public class PanelNoticeServiceImpl implements PanelNoticeService {
     private Mono<Notification> saveNotification(SendCampaignNoticeReqDto campaignNoticeReqDto, List<String> failRes,
                                                 int successNumber, List<String> successSsn, NoticeType noticeType) {
 
-        if (campaignNoticeReqDto.getPushNotification().compareTo(true) == 0) {
+        if (Boolean.TRUE.equals(campaignNoticeReqDto.getPushNotification())) {
             if (campaignNoticeReqDto.getActivationDate() == null ||
-                    campaignNoticeReqDto.getActivationDate().equals("cuu")) {
+                    campaignNoticeReqDto.getActivationDate().equals(Utilities.getCurrentUTCDate().concat("T20:30:00.000Z"))) {
                 PushNotificationReqDto pushReqDto = new PushNotificationReqDto();
                 modelMapper.map(campaignNoticeReqDto, pushReqDto);
                 pushReqDto.setSuccessSsn(successSsn);
 
+                //this is not part of the reactive chain
                 pushNotificationService.multiCastPushNotification(pushReqDto)
                         .subscribe(); // Fire-and-forget: This triggers the execution but immediately "forgets", triggers the HTTP request without waiting for its result, continuing the flow immediately.
-                //No execution happens until something subscribes to the reactive source (like a Mono or Flux)
             }
         }
 
-
-        return Mono //where you return a Mono or Flux, Spring WebFlux or other reactive frameworks will handle subscription for you
-                .just(campaignNoticeReqDto)
-                .flatMap(camp -> notificationRepository.insert(Notification
+        return notificationRepository.insert(Notification
                         .builder()
                         .creationDate(System.currentTimeMillis())
-                        .description(camp.getDescription())
-                        .title(camp.getTitle())
+                        .description(campaignNoticeReqDto.getDescription())
+                        .title(campaignNoticeReqDto.getTitle())
                         .type(noticeType.getValue())
-                        .platform(camp.getPlatform() != null ? Platform.valueOf(camp.getPlatform())
+                        .platform(campaignNoticeReqDto.getPlatform() != null ? Platform.valueOf(campaignNoticeReqDto.getPlatform())
                                 : Platform.ALL)
-                        .createdBy(camp.getSsn())
+                        .createdBy(campaignNoticeReqDto.getSsn())
                         .creationDateUTC(Utilities.getCurrentUTC())
                         .status(NotificationStatus.ACTIVE)
                         .successNumber(String.valueOf(successNumber))
                         .failureNumber(String.valueOf(failure))
                         .failureList(failRes)
-                        .activationDate(camp.getActivationDate())
-                        .hyperlink(camp.getHyperlink())
-                        .pushNotification(camp.getPushNotification())
-                        .build()))
+                        .activationDate(campaignNoticeReqDto.getActivationDate())
+                        .hyperlink(campaignNoticeReqDto.getHyperlink())
+                        .pushNotification(campaignNoticeReqDto.getPushNotification())
+                        .build())
                 .onErrorMap(throwable -> new ValidationException(throwable.getMessage(), "error.on.save.notification"));
     }
 

@@ -108,6 +108,12 @@ public class NoticeController {
         new ResponseEntity<>(HttpStatus.OK);
     }
 
+    @PostMapping(value = "/push-job")
+    public void sendPushJob() {
+        jobService.pushNotificationBasedOnActivationDate().subscribe();
+        new ResponseEntity<>(HttpStatus.OK);
+    }
+
     /*--------------------panel Rest api--------------------*/
 
     @Operation(summary = "سرویس ارسال پیام کمپین",

@@ -36,20 +36,24 @@ public class NoticeMidnightJobService {
 
     private final PushNotificationProviderService pushNotificationService;
 
-    // this service is called by job Rest Api day by day at 5 o'clock
-    public void pushNotificationBasedOnActivationDate() {
-        notificationRepository.findByPushNotificationIsTrueAndActivationDate(Utilities.getCurrentUTCDate().concat("T20:30:00.000Z"))
+    // this service is called by job Rest Api day by day at 5 o'clock(@Scheduled(cron = "0 5 * * *")  // Runs daily at 5:00)
+    public Mono<Void> pushNotificationBasedOnActivationDate() {
+        return notificationRepository.findByPushNotificationIsTrueAndActivationDate(Utilities.getCurrentUTCDate().concat("T20:30:00.000Z"))
                 .switchIfEmpty(Mono.defer(Mono::empty))
                 .flatMap(savedNotice -> {
                     PushNotificationReqDto pushReqDto = new PushNotificationReqDto();
                     modelMapper.map(savedNotice, pushReqDto);
                     if (NoticeType.GENERAL.getValue().equals(savedNotice.getType()))
                         pushReqDto.setSuccessSsn(Collections.emptyList());
-//          TODO:          else{
-//                       I might save ssn list in this condition and here just gt from the document
-//                    }
-                    return pushNotificationService.multiCastPushNotification(pushReqDto);
-                });
+
+                    return pushNotificationService.multiCastPushNotification(pushReqDto)
+                            .onErrorResume(e -> {
+                                // Log the error and return Mono.empty() to continue processing
+                                log.error("Error sending notification for {}", savedNotice, e);
+                                return Mono.empty();
+                            });
+                })
+                .then();
     }
 
     // this service is called by notice-api-job Rest Api at midnight
