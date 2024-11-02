@@ -1,8 +1,10 @@
 package ir.co.sadad.noticeapi.services;
 
-import ir.co.sadad.noticeapi.dtos.*;
+import ir.co.sadad.noticeapi.dtos.DeleteNoticeReqDto;
+import ir.co.sadad.noticeapi.dtos.LastSeenResDto;
+import ir.co.sadad.noticeapi.dtos.UnreadNoticeCountResDto;
+import ir.co.sadad.noticeapi.dtos.UserNoticeListResDto;
 import ir.co.sadad.noticeapi.models.UserNotification;
-import org.springframework.http.codec.multipart.FilePart;
 import reactor.core.publisher.Mono;
 
 
@@ -14,13 +16,11 @@ import reactor.core.publisher.Mono;
  */
 public interface NoticeService {
 
-    Mono<SendCampaignNoticeResDto> sendCampaignNotice(SendCampaignNoticeReqDto campaignNoticeReqDto, FilePart file);
-
     Mono<UserNoticeListResDto> userNoticeList(String ssn, String type, int page, String userAgent);
 
-    Mono<LastSeenResDto> UserLastSeenId(String ssn, Long lastSeenCampaign, Long lastSeenTransaction);
+    Mono<LastSeenResDto> userLastSeenId(String ssn, Long lastSeenCampaign, Long lastSeenTransaction);
 
-    Mono<UnreadNoticeCountResDto> unreadNoticeCount(String ssn);
+    Mono<UnreadNoticeCountResDto> unreadNoticeCount(String ssn, String userAgent);
 
     Mono<UserNotification> deleteMultiNotice(String ssn, DeleteNoticeReqDto deleteNoticeReqDto);
 

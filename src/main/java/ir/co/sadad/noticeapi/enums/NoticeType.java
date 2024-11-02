@@ -5,7 +5,8 @@ import lombok.Getter;
 @Getter
 public enum NoticeType {
     TRANSACTION("transaction"),
-    CAMPAIGN("campaign");
+    CAMPAIGN("campaign"),
+    GENERAL("general");
 
     private final String value;
 

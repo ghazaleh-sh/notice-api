@@ -39,6 +39,11 @@ public class UserNotification implements Serializable {
     private List<Long> notificationCampaignsCreateDate;
 
     /**
+     * General notifications list that user picked them up - just keep creationDate of each notification record
+     */
+    private List<Long> notificationGeneralCreateDate;
+
+    /**
      * creation date of last seen campaign notice
      */
     private Long lastSeenCampaign;
