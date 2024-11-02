@@ -1,5 +1,7 @@
 package ir.co.sadad.noticeapi.services;
 
+import ir.co.sadad.noticeapi.dtos.PushNotificationReqDto;
+import ir.co.sadad.noticeapi.enums.NoticeType;
 import ir.co.sadad.noticeapi.models.Notification;
 import ir.co.sadad.noticeapi.models.UserNotification;
 import ir.co.sadad.noticeapi.repositories.NotificationRepository;
@@ -8,11 +10,13 @@ import ir.co.sadad.noticeapi.services.utilities.Utilities;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.joda.time.DateTime;
+import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -28,6 +32,25 @@ public class NoticeMidnightJobService {
     //    @Value("${notifications.job.max-count}")
     private final int MAXIMUM_NOTIFICATIONS = 5;
 
+    private final ModelMapper modelMapper;
+
+    private final PushNotificationProviderService pushNotificationService;
+
+    // this service is called by job Rest Api day by day at 5 o'clock
+    public void pushNotificationBasedOnActivationDate() {
+        notificationRepository.findByPushNotificationIsTrueAndActivationDate(Utilities.getCurrentUTCDate().concat("T20:30:00.000Z"))
+                .switchIfEmpty(Mono.defer(Mono::empty))
+                .flatMap(savedNotice -> {
+                    PushNotificationReqDto pushReqDto = new PushNotificationReqDto();
+                    modelMapper.map(savedNotice, pushReqDto);
+                    if (NoticeType.GENERAL.getValue().equals(savedNotice.getType()))
+                        pushReqDto.setSuccessSsn(Collections.emptyList());
+//          TODO:          else{
+//                       I might save ssn list in this condition and here just gt from the document
+//                    }
+                    return pushNotificationService.multiCastPushNotification(pushReqDto);
+                });
+    }
 
     // this service is called by notice-api-job Rest Api at midnight
     public void resetNoticeCountJob() {

@@ -137,13 +137,16 @@ public class PanelNoticeServiceImpl implements PanelNoticeService {
                                                 int successNumber, List<String> successSsn, NoticeType noticeType) {
 
         if (campaignNoticeReqDto.getPushNotification().compareTo(true) == 0) {
-            PushNotificationReqDto pushReqDto = new PushNotificationReqDto();
-            modelMapper.map(campaignNoticeReqDto, pushReqDto);
-            pushReqDto.setSuccessSsn(successSsn);
+            if (campaignNoticeReqDto.getActivationDate() == null ||
+                    campaignNoticeReqDto.getActivationDate().equals("cuu")) {
+                PushNotificationReqDto pushReqDto = new PushNotificationReqDto();
+                modelMapper.map(campaignNoticeReqDto, pushReqDto);
+                pushReqDto.setSuccessSsn(successSsn);
 
-            pushNotificationService.multiCastPushNotification(pushReqDto)
-                    .subscribe(); // Fire-and-forget: This triggers the execution but immediately "forgets", triggers the HTTP request without waiting for its result, continuing the flow immediately.
-            //No execution happens until something subscribes to the reactive source (like a Mono or Flux)
+                pushNotificationService.multiCastPushNotification(pushReqDto)
+                        .subscribe(); // Fire-and-forget: This triggers the execution but immediately "forgets", triggers the HTTP request without waiting for its result, continuing the flow immediately.
+                //No execution happens until something subscribes to the reactive source (like a Mono or Flux)
+            }
         }
 
 

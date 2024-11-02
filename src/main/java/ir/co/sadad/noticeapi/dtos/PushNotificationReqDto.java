@@ -22,8 +22,8 @@ public class PushNotificationReqDto {
     @Schema(title = "کانال اعلان")
     private String platform;
 
-    @Schema(title = "تاریخ فعالسازی اعلان")
-    private String activationDate;
+//    @Schema(title = "تاریخ فعالسازی اعلان")
+//    private String activationDate;
 
     @Schema(title = "لینک مربوط به اعلان در صورت وجود")
     private String hyperlink;

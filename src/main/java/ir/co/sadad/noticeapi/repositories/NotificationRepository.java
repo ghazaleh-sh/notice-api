@@ -34,4 +34,6 @@ public interface NotificationRepository extends ReactiveMongoRepository<Notifica
         return new Query(criteria);
     }
 
+    Flux<Notification> findByPushNotificationIsTrueAndActivationDate(String currentDate);
+
 }
