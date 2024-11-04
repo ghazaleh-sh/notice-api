@@ -1,6 +1,6 @@
 package ir.co.sadad.noticeapi.services;
 
-import ir.co.sadad.noticeapi.dtos.PushNotificationReqDto;
+import ir.co.sadad.noticeapi.dtos.PushNotificationSingleReqDto;
 import ir.co.sadad.noticeapi.dtos.SendCampaignNoticeReqDto;
 import ir.co.sadad.noticeapi.dtos.sendThirdPartyResDto;
 import ir.co.sadad.noticeapi.enums.NoticeType;
@@ -61,33 +61,35 @@ public class ThirdPartyNotificationService {
     }
 
     private Mono<Notification> saveThirdPartyNotification(SendCampaignNoticeReqDto noticeReqDto, String clientNationalCode) {
-        if (noticeReqDto.getPushNotification().compareTo(true) == 0) {
-            PushNotificationReqDto pushReqDto = new PushNotificationReqDto();
-            modelMapper.map(noticeReqDto, pushReqDto);
-            pushReqDto.setSuccessSsn(List.of(clientNationalCode));
 
-            pushNotificationService.singlePushNotification(pushReqDto)
-                    .subscribe(); // Fire-and-forget: This triggers the execution but immediately "forgets", triggers the HTTP request without waiting for its result, continuing the flow immediately.
-            //No execution happens until something subscribes to the reactive source (like a Mono or Flux)
+        if (Boolean.TRUE.equals(noticeReqDto.getPushNotification())) {
+            if (noticeReqDto.getActivationDate() == null ||
+                    noticeReqDto.getActivationDate().equals(Utilities.getCurrentUTCDate().concat("T20:30:00.000Z"))) {
+
+                PushNotificationSingleReqDto pushReqDto = new PushNotificationSingleReqDto();
+                modelMapper.map(noticeReqDto, pushReqDto);
+                pushReqDto.setSsn(clientNationalCode);
+
+                pushNotificationService.singlePushNotification(pushReqDto)
+                        .subscribe(); //No execution happens until something subscribes to the reactive source (like a Mono or Flux)
+            }
         }
 
-        return Mono
-                .just(noticeReqDto)
-                .flatMap(tpNotice -> notificationRepository.insert(Notification
+        return notificationRepository.insert(Notification
                         .builder()
                         .creationDate(System.currentTimeMillis())
-                        .description(tpNotice.getDescription())
-                        .title(tpNotice.getTitle())
+                        .description(noticeReqDto.getDescription())
+                        .title(noticeReqDto.getTitle())
                         .type(NoticeType.CAMPAIGN.getValue())
-                        .platform(tpNotice.getPlatform() != null ? Platform.valueOf(tpNotice.getPlatform())
+                        .platform(noticeReqDto.getPlatform() != null ? Platform.valueOf(noticeReqDto.getPlatform())
                                 : Platform.ALL)
                         .createdBy(clientNationalCode)
                         .creationDateUTC(Utilities.getCurrentUTC())
                         .status(NotificationStatus.ACTIVE)
-                        .activationDate(!(tpNotice.getActivationDate().isEmpty()) ?
-                                tpNotice.getActivationDate().split("T")[0] : null)
-                        .hyperlink(tpNotice.getHyperlink())
-                        .build()))
+                        .activationDate(!(noticeReqDto.getActivationDate().isEmpty()) ?
+                                noticeReqDto.getActivationDate().split("T")[0] : null)
+                        .hyperlink(noticeReqDto.getHyperlink())
+                        .build())
                 .onErrorMap(throwable -> new ValidationException(throwable.getMessage(), "error.on.save.notification"));
     }
 

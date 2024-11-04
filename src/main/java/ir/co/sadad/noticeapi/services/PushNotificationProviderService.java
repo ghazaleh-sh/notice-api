@@ -1,6 +1,7 @@
 package ir.co.sadad.noticeapi.services;
 
 import ir.co.sadad.noticeapi.dtos.PushNotificationReqDto;
+import ir.co.sadad.noticeapi.dtos.PushNotificationSingleReqDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -15,6 +16,9 @@ public class PushNotificationProviderService {
 
     private final WebClient webClient;
 
+    @Value(value = "${push-notification.base-url}")
+    private String pushBaseUrl;
+
     @Value(value = "${push-notification.multicast-path}")
     private String multicastPushPath;
 
@@ -25,18 +29,18 @@ public class PushNotificationProviderService {
     public Mono<Void> multiCastPushNotification(PushNotificationReqDto notificationReqDto) {
         return webClient
                 .post()
-                .uri(multicastPushPath)
+                .uri(pushBaseUrl + multicastPushPath)
                 .body(Mono.just(notificationReqDto), PushNotificationReqDto.class)
                 .retrieve()
                 .bodyToMono(Void.class)
                 .doOnError(e -> log.error("Failed to send campaign push notification", e));
     }
 
-    public Mono<Void> singlePushNotification(PushNotificationReqDto notificationReqDto) {
+    public Mono<Void> singlePushNotification(PushNotificationSingleReqDto notificationSingleReqDto) {
         return webClient
                 .post()
-                .uri(singlePushPath)
-                .body(Mono.just(notificationReqDto), PushNotificationReqDto.class)
+                .uri(pushBaseUrl + singlePushPath)
+                .body(Mono.just(notificationSingleReqDto), PushNotificationSingleReqDto.class)
                 .retrieve()
                 .bodyToMono(Void.class)
                 .doOnError(e -> log.error("Failed to send third-party single push notification", e));

@@ -145,7 +145,7 @@ public class PanelNoticeServiceImpl implements PanelNoticeService {
 
                 //this is not part of the reactive chain
                 pushNotificationService.multiCastPushNotification(pushReqDto)
-                        .subscribe(); // Fire-and-forget: This triggers the execution but immediately "forgets", triggers the HTTP request without waiting for its result, continuing the flow immediately.
+                        .subscribe(); // Fire-and-forget: triggers the execution but immediately "forgets", triggers the HTTP request without waiting for its result, continuing the flow immediately.
             }
         }
 

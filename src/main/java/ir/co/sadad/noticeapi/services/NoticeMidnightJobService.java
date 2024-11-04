@@ -46,6 +46,8 @@ public class NoticeMidnightJobService {
                     if (NoticeType.GENERAL.getValue().equals(savedNotice.getType()))
                         pushReqDto.setSuccessSsn(Collections.emptyList());
 
+                    //TODO: else we should save the list of successSSn into the DB
+
                     return pushNotificationService.multiCastPushNotification(pushReqDto)
                             .onErrorResume(e -> {
                                 // Log the error and return Mono.empty() to continue processing
