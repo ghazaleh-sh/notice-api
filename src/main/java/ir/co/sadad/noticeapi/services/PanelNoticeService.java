@@ -1,10 +1,9 @@
 package ir.co.sadad.noticeapi.services;
 
-import ir.co.sadad.noticeapi.dtos.ListOfCampaignResDto;
-import ir.co.sadad.noticeapi.dtos.PanelNoticeListReqDto;
-import ir.co.sadad.noticeapi.dtos.UpdateCampaignNoticeDto;
+import ir.co.sadad.noticeapi.dtos.*;
 import ir.co.sadad.noticeapi.models.Notification;
-import reactor.core.publisher.Flux;
+import ir.co.sadad.noticeapi.models.UserNotification;
+import org.springframework.http.codec.multipart.FilePart;
 import reactor.core.publisher.Mono;
 
 /**
@@ -15,10 +14,16 @@ import reactor.core.publisher.Mono;
  */
 public interface PanelNoticeService {
 
+    Mono<SendCampaignNoticeResDto> sendCampaignNotice(SendCampaignNoticeReqDto campaignNoticeReqDto, FilePart file);
+
     Mono<Notification> updateCampaignMessage(UpdateCampaignNoticeDto updateCampaignDto, String ssn);
 
     Mono<Void> deleteCampaignMessage(Long notificationId);
 
     Mono<ListOfCampaignResDto> campaignList(PanelNoticeListReqDto reqList);
+
+    Mono<FailureListDto> failureNotifications(Long notificationId);
+
+    Mono<UserNotification> saveUser(String ssn, Long savedNotificationId);
 
 }

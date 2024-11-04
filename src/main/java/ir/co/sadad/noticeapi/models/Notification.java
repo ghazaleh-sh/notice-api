@@ -1,19 +1,22 @@
 package ir.co.sadad.noticeapi.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import ir.co.sadad.noticeapi.enums.NotificationStatus;
 import ir.co.sadad.noticeapi.enums.Platform;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.CreatedBy;
-import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.LastModifiedBy;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import javax.validation.constraints.NotNull;
+import java.io.Serial;
 import java.io.Serializable;
+import java.util.List;
 
 @Document
 @Data
@@ -23,6 +26,7 @@ import java.io.Serializable;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class Notification implements Serializable {
 
+    @Serial
     private static final long serialVersionUID = -1410604679815168078L;
     @Id
     private String id;
@@ -98,4 +102,20 @@ public class Notification implements Serializable {
      */
     @LastModifiedBy
     private String modifiedBy;
+
+    private NotificationStatus status;
+
+    private String successNumber;
+
+    private String failureNumber;
+
+    @JsonIgnore
+    private List<String> failureList;
+
+    private String activationDate;
+
+    private String hyperlink;
+
+    private Boolean pushNotification;
+
 }

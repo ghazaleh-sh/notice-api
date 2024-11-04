@@ -9,7 +9,10 @@ public enum Platform {
 
     ANDROID("ANDROID"),
     IOS("IOS"),
-    PWA("PWA");
+    PWA("PWA"),
+
+    ALL("ALL"),
+    ANDROID_TEST("ANDROID_TEST");
 
     final String desc;
 }

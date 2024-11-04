@@ -10,7 +10,7 @@
     </parent>
     <groupId>ir.co.sadad</groupId>
     <artifactId>notice-api</artifactId>
-    <version>1.0.6-SNAPSHOT</version>
+    <version>1.0.10-SNAPSHOT</version>
     <name>notice-api</name>
     <description>notices for mobile application</description>
     <properties>
@@ -58,12 +58,22 @@
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.modelmapper</groupId>
+            <artifactId>modelmapper</artifactId>
+            <version>3.1.1</version>
+        </dependency>
 
         <!--############################ (jalali calendar) ############################-->
         <dependency>
             <groupId>joda-time</groupId>
             <artifactId>joda-time</artifactId>
             <version>2.11.2</version>
+        </dependency>
+        <dependency>
+            <groupId>ir.co.sadad.hambaam</groupId>
+            <artifactId>persian-datetime</artifactId>
+            <version>1.0.3-SNAPSHOT</version>
         </dependency>
 
 <!--        <dependency>-->

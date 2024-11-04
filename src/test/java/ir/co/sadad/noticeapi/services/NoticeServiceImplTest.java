@@ -12,10 +12,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.mongodb.core.ReactiveMongoTemplate;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
 import java.util.Arrays;
+import java.util.List;
 
 import static org.mockito.Mockito.when;
 
@@ -28,15 +30,19 @@ class NoticeServiceImplTest {
     @Mock
     private NotificationRepository notificationRepository;
 
+    @Mock
+    private ReactiveMongoTemplate reactiveMongoTemplate;
+
     //given
     private static final String SSN = "123456789";
     private static final String TYPE = "campaign";
     private static final int PAGE = 1;
 
     private UserNotification createUserNotification() {
-        UserNotification userNotification = new UserNotification("1", SSN, null, null, 12345L, 12346L, 0, 2);
+        UserNotification userNotification = new UserNotification("1", SSN, null, null,null, 12345L, 12346L, 0, 2);
         userNotification.setNotificationTransactions(Arrays.asList(
-                new Notification("1", "1105-14:00", 12346L, null, null, "transaction", "5000", "34567677", "1000", "lgd", "moneyTransfer", null,null, null, null)
+                new Notification("1", "1105-14:00", 12346L, null, null, "transaction", "5000",
+                        "34567677", "1000", "lgd", "moneyTransfer", null,null, null, null, null,null, null, null, null, null)
         ));
 
         return userNotification;
@@ -49,8 +55,8 @@ class NoticeServiceImplTest {
     @Test
     void shouldReturnUserNotificationListForGivenSSNAndTypeAndPage() {
 
-        Notification noticCamp = new Notification("2", null, 23456L, "reminder", "descriptionnnn", "campaign", null, null, null, null,null, null, null, null, null);
-        Notification noticCamp3 = new Notification("3", null, 76767L, "reminder2", "descriptionnnn2", "campaign", null, null, null, null,null, null,null, null, null);
+        Notification noticCamp = null; //new Notification("2", null, 23456L, "reminder", "descriptionnnn", "campaign", null, null, null, null,null, null, null, null, null);
+        Notification noticCamp3 = null;//new Notification("3", null, 76767L, "reminder2", "descriptionnnn2", "campaign", null, null, null, null,null, null,null, null, null);
         when(notificationRepository.findByCreationDate(23456L)).thenReturn(Mono.just(noticCamp));
         when(notificationRepository.findByCreationDate(76767L)).thenReturn(Mono.just(noticCamp3));
 
@@ -61,7 +67,7 @@ class NoticeServiceImplTest {
         when(userNotificationRepository.findBySsn(SSN)).thenReturn(Mono.just(userNotification));
 
         // when
-        NoticeService noticeService = new NoticeServiceImpl(notificationRepository, userNotificationRepository);
+        NoticeService noticeService = new NoticeServiceImpl(notificationRepository, userNotificationRepository, reactiveMongoTemplate);
         Mono<UserNoticeListResDto> userNoticeListResDtoMono = noticeService.userNoticeList(SSN, TYPE, PAGE, null);
 
         // then
@@ -87,8 +93,8 @@ class NoticeServiceImplTest {
         when(userNotificationRepository.findBySsn(SSN)).thenReturn(Mono.just(userNotification));
 
         // when
-        NoticeService noticeService = new NoticeServiceImpl(notificationRepository, userNotificationRepository);
-        Mono<LastSeenResDto> userNoticeListResDtoMono = noticeService.UserLastSeenId(SSN, lastSeenCamp, lastSeenTra);
+        NoticeService noticeService = new NoticeServiceImpl(notificationRepository, userNotificationRepository, reactiveMongoTemplate);
+        Mono<LastSeenResDto> userNoticeListResDtoMono = noticeService.userLastSeenId(SSN, lastSeenCamp, lastSeenTra);
 
         when(userNotificationRepository.save(userNotification)).thenReturn(Mono.just(userNotification));
 
@@ -105,13 +111,13 @@ class NoticeServiceImplTest {
     void shouldReturnUnreadNoticeCountForGivenSSN() {
 
         UserNotification userNotification = createUserNotification();
-        userNotification.setNotificationCampaignsCreateDate(Arrays.asList(12345L));
+        userNotification.setNotificationCampaignsCreateDate(List.of(12345L));
 
         when(userNotificationRepository.findBySsn(SSN)).thenReturn(Mono.just(userNotification));
 
         // when
-        NoticeService noticeService = new NoticeServiceImpl(notificationRepository, userNotificationRepository);
-        Mono<UnreadNoticeCountResDto> unreadNoticeCountResDtoMono = noticeService.unreadNoticeCount(SSN);
+        NoticeService noticeService = new NoticeServiceImpl(notificationRepository, userNotificationRepository, reactiveMongoTemplate);
+        Mono<UnreadNoticeCountResDto> unreadNoticeCountResDtoMono = noticeService.unreadNoticeCount(SSN, "android");
 
         // then
         StepVerifier.create(unreadNoticeCountResDtoMono)
@@ -136,7 +142,7 @@ class NoticeServiceImplTest {
         dto.setNotificationType("campaign");
 
         // when
-        NoticeService noticeService = new NoticeServiceImpl(notificationRepository, userNotificationRepository);
+        NoticeService noticeService = new NoticeServiceImpl(notificationRepository, userNotificationRepository, reactiveMongoTemplate);
         Mono<UserNotification> userNotificationDtoMono = noticeService.deleteMultiNotice(SSN, dto);
 
         when(userNotificationRepository.save(userNotification)).thenReturn(userNotificationDtoMono);

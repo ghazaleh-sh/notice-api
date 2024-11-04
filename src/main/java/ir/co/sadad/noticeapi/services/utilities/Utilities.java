@@ -1,20 +1,20 @@
 package ir.co.sadad.noticeapi.services.utilities;
 
+import ir.co.sadad.hambaam.persiandatetime.PersianUTC;
 import ir.co.sadad.noticeapi.enums.Platform;
-
-import java.time.Instant;
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
 
 public class Utilities {
 
-    public static String currentUTCDate() {
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
-        return formatter.format(Instant.now().atZone(ZoneId.of("UTC")));
+    public static String getCurrentUTC() {
+        return PersianUTC.currentUTC().toString();
+    }
+
+    public static String getCurrentUTCDate() {
+        return PersianUTC.currentUTC().getDate();
     }
 
     public static Platform checkUserAgent(String userAgent) {
-        if (userAgent.contains("CxpMobileAndroid"))
+        if (userAgent.contains("CxpMobileAndroid") && !(userAgent.contains("develop") || userAgent.contains("staging")))
             return Platform.ANDROID;
         if (userAgent.contains("CxpMobileiOS"))
             return Platform.IOS;
@@ -22,6 +22,8 @@ public class Utilities {
                 userAgent.contains("BaamBaseGateway/1.0 && iPhone") ||
                 userAgent.contains("BaamBaseGateway/1.0 && iPad"))
             return Platform.PWA;
+        if (userAgent.contains("CxpMobileAndroid") && (userAgent.contains("develop") || userAgent.contains("staging")))
+            return Platform.ANDROID_TEST;
         else return null;
     }
 }
