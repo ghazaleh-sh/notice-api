@@ -68,6 +68,7 @@ public class ThirdPartyNotificationService {
 
                 PushNotificationSingleReqDto pushReqDto = new PushNotificationSingleReqDto();
                 modelMapper.map(noticeReqDto, pushReqDto);
+                pushReqDto.setNoticeType(NoticeType.CAMPAIGN.getValue());
                 pushReqDto.setSsn(clientNationalCode);
 
                 pushNotificationService.singlePushNotification(pushReqDto)

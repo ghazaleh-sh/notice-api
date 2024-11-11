@@ -135,18 +135,20 @@ public class PanelNoticeServiceImpl implements PanelNoticeService {
 
     private Mono<Notification> saveNotification(SendCampaignNoticeReqDto campaignNoticeReqDto, List<String> failRes,
                                                 int successNumber, List<String> successSsn, NoticeType noticeType) {
-
+        boolean keepSuccessSsn = false;
         if (Boolean.TRUE.equals(campaignNoticeReqDto.getPushNotification())) {
             if (campaignNoticeReqDto.getActivationDate() == null ||
                     campaignNoticeReqDto.getActivationDate().equals(Utilities.getCurrentUTCDate().concat("T20:30:00.000Z"))) {
                 PushNotificationReqDto pushReqDto = new PushNotificationReqDto();
                 modelMapper.map(campaignNoticeReqDto, pushReqDto);
                 pushReqDto.setSuccessSsn(successSsn);
+                pushReqDto.setNoticeType(noticeType.getValue());
 
                 //this is not part of the reactive chain
                 pushNotificationService.multiCastPushNotification(pushReqDto)
                         .subscribe(); // Fire-and-forget: triggers the execution but immediately "forgets", triggers the HTTP request without waiting for its result, continuing the flow immediately.
-            }
+
+            } else keepSuccessSsn = true;
         }
 
         return notificationRepository.insert(Notification
@@ -166,6 +168,7 @@ public class PanelNoticeServiceImpl implements PanelNoticeService {
                         .activationDate(campaignNoticeReqDto.getActivationDate())
                         .hyperlink(campaignNoticeReqDto.getHyperlink())
                         .pushNotification(campaignNoticeReqDto.getPushNotification())
+                        .succeededListForFuturePush(keepSuccessSsn ? successSsn : Collections.emptyList())
                         .build())
                 .onErrorMap(throwable -> new ValidationException(throwable.getMessage(), "error.on.save.notification"));
     }

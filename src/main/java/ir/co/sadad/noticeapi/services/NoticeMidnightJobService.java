@@ -43,16 +43,13 @@ public class NoticeMidnightJobService {
                 .flatMap(savedNotice -> {
                     PushNotificationReqDto pushReqDto = new PushNotificationReqDto();
                     modelMapper.map(savedNotice, pushReqDto);
-                    if (NoticeType.GENERAL.getValue().equals(savedNotice.getType()))
-                        pushReqDto.setSuccessSsn(Collections.emptyList());
-
-                    //TODO: else we should save the list of successSSn into the DB
+                    pushReqDto.setNoticeType(NoticeType.CAMPAIGN.getValue());
+                    pushReqDto.setSuccessSsn(savedNotice.getSucceededListForFuturePush());// if type = GENERAL => list is empty
 
                     return pushNotificationService.multiCastPushNotification(pushReqDto)
                             .onErrorResume(e -> {
-                                // Log the error and return Mono.empty() to continue processing
                                 log.error("Error sending notification for {}", savedNotice, e);
-                                return Mono.empty();
+                                return Mono.empty();//to continue processing
                             });
                 })
                 .then();

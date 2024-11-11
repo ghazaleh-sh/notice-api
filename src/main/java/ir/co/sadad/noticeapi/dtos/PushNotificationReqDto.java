@@ -24,4 +24,6 @@ public class PushNotificationReqDto {
 
     @Schema(title = "لینک مربوط به اعلان در صورت وجود")
     private String hyperlink;
+
+    private String noticeType;
 }

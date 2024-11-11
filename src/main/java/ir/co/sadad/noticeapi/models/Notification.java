@@ -118,4 +118,6 @@ public class Notification implements Serializable {
 
     private Boolean pushNotification;
 
+    private List<String> succeededListForFuturePush;
+
 }

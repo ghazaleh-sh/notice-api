@@ -77,7 +77,8 @@ public class NoticeServiceImpl implements NoticeService {
                                 int totalPages = (int) Math.ceil((double) totalItems / pageSize);
 
                                 if (totalPages != 0 && page > totalPages) {
-                                    return Mono.error(new GeneralException("page.is.more.than.total", HttpStatus.BAD_REQUEST));
+                                    return Mono.empty();
+//                                    return Mono.error(new GeneralException("page.is.more.than.total", HttpStatus.BAD_REQUEST));
                                 }
 
                                 int startIndex = (page - 1) * pageSize;
