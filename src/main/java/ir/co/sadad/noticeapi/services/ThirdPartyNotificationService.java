@@ -14,6 +14,7 @@ import ir.co.sadad.noticeapi.services.utilities.Utilities;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
@@ -37,6 +38,9 @@ public class ThirdPartyNotificationService {
 
 
     public Mono<sendThirdPartyResDto> sendThirdPartyNotice(String authToken, String clientNationalCode, SendCampaignNoticeReqDto thirdPartyNoticeReqDto) {
+        if (thirdPartyNoticeReqDto.getSsn() == null || thirdPartyNoticeReqDto.getSsn().isEmpty())
+            throw new ValidationException("ssn.must.not.be.null", null, HttpStatus.BAD_REQUEST);
+
         sendThirdPartyResDto res = new sendThirdPartyResDto();
         return Mono.just(thirdPartyNoticeReqDto)
                 .flatMap(req -> saveThirdPartyNotification(req, clientNationalCode))
@@ -69,7 +73,7 @@ public class ThirdPartyNotificationService {
                 PushNotificationSingleReqDto pushReqDto = new PushNotificationSingleReqDto();
                 modelMapper.map(noticeReqDto, pushReqDto);
                 pushReqDto.setNoticeType(NoticeType.CAMPAIGN.getValue());
-                pushReqDto.setSsn(clientNationalCode);
+                pushReqDto.setSsn(noticeReqDto.getSsn());
 
                 pushNotificationService.singlePushNotification(pushReqDto)
                         .subscribe(); //No execution happens until something subscribes to the reactive source (like a Mono or Flux)
@@ -87,9 +91,11 @@ public class ThirdPartyNotificationService {
                         .createdBy(clientNationalCode)
                         .creationDateUTC(Utilities.getCurrentUTC())
                         .status(NotificationStatus.ACTIVE)
-                        .activationDate(!(noticeReqDto.getActivationDate().isEmpty()) ?
+                        .activationDate(!(noticeReqDto.getActivationDate() == null || noticeReqDto.getActivationDate().isEmpty()) ?
                                 noticeReqDto.getActivationDate().split("T")[0] : null)
                         .hyperlink(noticeReqDto.getHyperlink())
+                        .pushNotification(noticeReqDto.getPushNotification())
+                        .succeededListForFuturePush(List.of(noticeReqDto.getSsn()))
                         .build())
                 .onErrorMap(throwable -> new ValidationException(throwable.getMessage(), "error.on.save.notification"));
     }

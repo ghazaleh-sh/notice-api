@@ -42,7 +42,7 @@ class NoticeServiceImplTest {
         UserNotification userNotification = new UserNotification("1", SSN, null, null,null, 12345L, 12346L, 0, 2);
         userNotification.setNotificationTransactions(Arrays.asList(
                 new Notification("1", "1105-14:00", 12346L, null, null, "transaction", "5000",
-                        "34567677", "1000", "lgd", "moneyTransfer", null,null, null, null, null,null, null, null, null, null, null)
+                        "34567677", "1000", "lgd", "moneyTransfer", null,null, null, null, null,null, null, null, null, null, null, null)
         ));
 
         return userNotification;

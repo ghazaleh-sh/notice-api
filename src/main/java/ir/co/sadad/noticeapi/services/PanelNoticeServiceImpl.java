@@ -136,6 +136,8 @@ public class PanelNoticeServiceImpl implements PanelNoticeService {
     private Mono<Notification> saveNotification(SendCampaignNoticeReqDto campaignNoticeReqDto, List<String> failRes,
                                                 int successNumber, List<String> successSsn, NoticeType noticeType) {
         boolean keepSuccessSsn = false;
+        Long creationDateAsId = System.currentTimeMillis();
+
         if (Boolean.TRUE.equals(campaignNoticeReqDto.getPushNotification())) {
             if (campaignNoticeReqDto.getActivationDate() == null ||
                     campaignNoticeReqDto.getActivationDate().equals(Utilities.getCurrentUTCDate().concat("T20:30:00.000Z"))) {
@@ -143,17 +145,17 @@ public class PanelNoticeServiceImpl implements PanelNoticeService {
                 modelMapper.map(campaignNoticeReqDto, pushReqDto);
                 pushReqDto.setSuccessSsn(successSsn);
                 pushReqDto.setNoticeType(noticeType.getValue());
+                pushReqDto.setNoticeId(creationDateAsId);
 
-                //this is not part of the reactive chain
                 pushNotificationService.multiCastPushNotification(pushReqDto)
-                        .subscribe(); // Fire-and-forget: triggers the execution but immediately "forgets", triggers the HTTP request without waiting for its result, continuing the flow immediately.
+                        .subscribe(); // Fire-and-forget: triggers the execution(HTTP request) but immediately "forgets", without waiting for its result, continuing the flow immediately.
 
             } else keepSuccessSsn = true;
         }
 
         return notificationRepository.insert(Notification
                         .builder()
-                        .creationDate(System.currentTimeMillis())
+                        .creationDate(creationDateAsId)
                         .description(campaignNoticeReqDto.getDescription())
                         .title(campaignNoticeReqDto.getTitle())
                         .type(noticeType.getValue())

@@ -26,4 +26,6 @@ public class PushNotificationReqDto {
     private String hyperlink;
 
     private String noticeType;
+
+    private Long noticeId;
 }

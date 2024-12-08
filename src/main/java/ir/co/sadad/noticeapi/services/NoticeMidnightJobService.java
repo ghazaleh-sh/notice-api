@@ -16,7 +16,6 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -45,6 +44,7 @@ public class NoticeMidnightJobService {
                     modelMapper.map(savedNotice, pushReqDto);
                     pushReqDto.setNoticeType(NoticeType.CAMPAIGN.getValue());
                     pushReqDto.setSuccessSsn(savedNotice.getSucceededListForFuturePush());// if type = GENERAL => list is empty
+                    pushReqDto.setNoticeId(savedNotice.getCreationDate());
 
                     return pushNotificationService.multiCastPushNotification(pushReqDto)
                             .onErrorResume(e -> {

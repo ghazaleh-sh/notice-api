@@ -14,14 +14,12 @@ public class Utilities {
     }
 
     public static Platform checkUserAgent(String userAgent) {
+        if (userAgent.contains("BaamBaseGateway"))
+            return Platform.PWA;
         if (userAgent.contains("CxpMobileAndroid") && !(userAgent.contains("develop") || userAgent.contains("staging")))
             return Platform.ANDROID;
         if (userAgent.contains("CxpMobileiOS"))
             return Platform.IOS;
-        if (userAgent.contains("BaamBaseGateway/1.0 && Android") ||
-                userAgent.contains("BaamBaseGateway/1.0 && iPhone") ||
-                userAgent.contains("BaamBaseGateway/1.0 && iPad"))
-            return Platform.PWA;
         if (userAgent.contains("CxpMobileAndroid") && (userAgent.contains("develop") || userAgent.contains("staging")))
             return Platform.ANDROID_TEST;
         else return null;

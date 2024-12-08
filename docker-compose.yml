@@ -23,7 +23,7 @@ services:
     working_dir: /
     build : .
     restart : always
-    command: [ "/usr/bin/java", "-jar", "/notice-api-1.0.15-SNAPSHOT.jar" ]
+    command: [ "/usr/bin/java", "-jar", "/notice-api-1.0.16-SNAPSHOT.jar" ]
 networks:
   neo-baam:
     driver: bridge
